@@ -1,14 +1,13 @@
 import './style_2.css'
-
+import { createClient } from '@supabase/supabase-js'; 
 const SUPABASE_URL = "https://qsbqawjpkwxawsaluuga.supabase.co";
 const SUPABASE_KEY = "sb_publishable_-MgBtWaAp2RuziOkI2xf2Q_JKlNLBPi";
+
 let db = null;
 const getDb = () => {
   if (db) return db;
   try {
-    if (window.supabase && window.supabase.createClient) {
-      db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    }
+      db = createClient(SUPABASE_URL, SUPABASE_KEY);
   } catch (e) {
     console.warn("Supabase初期化失敗:", e);
   }
