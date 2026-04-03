@@ -29,7 +29,9 @@ body {
 body {
   font-family: "Zen Kaku Gothic New", sans-serif;
   background:
-    radial-gradient(circle at top, rgba(255, 255, 255, 0.65), transparent 34%),
+    radial-gradient(circle at top,
+      rgba(255, 255, 255, 0.65),
+      transparent 34%),
     linear-gradient(180deg, #faf5eb 0%, var(--bg) 100%);
   color: var(--ink);
   overflow: hidden;
@@ -71,10 +73,17 @@ canvas {
   place-items: center;
   padding: 24px;
   background:
-    radial-gradient(circle at 50% 35%, rgba(180, 221, 68, 0.2), transparent 26%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(246, 241, 228, 0.96));
+    radial-gradient(circle at 50% 35%,
+      rgba(180, 221, 68, 0.2),
+      transparent 26%),
+    linear-gradient(180deg,
+      rgba(255, 255, 255, 0.88),
+      rgba(246, 241, 228, 0.96));
   z-index: 30;
-  transition: opacity 900ms ease, visibility 900ms ease, transform 900ms ease;
+  transition:
+    opacity 900ms ease,
+    visibility 900ms ease,
+    transform 900ms ease;
 }
 
 .loading-screen.is-hidden {
@@ -107,7 +116,9 @@ canvas {
 .home-screen {
   opacity: 0;
   transform: translateY(16px) scale(0.985);
-  transition: opacity 900ms ease, transform 900ms ease;
+  transition:
+    opacity 900ms ease,
+    transform 900ms ease;
 }
 
 .home-screen.is-visible {
@@ -119,7 +130,9 @@ canvas {
   position: relative;
   min-height: 100vh;
   padding: max(18px, env(safe-area-inset-top)) 22px max(24px, env(safe-area-inset-bottom));
-  transition: filter 420ms ease, transform 420ms ease;
+  transition:
+    filter 420ms ease,
+    transform 420ms ease;
 }
 
 .site-badge {
@@ -149,7 +162,9 @@ canvas {
   background: transparent;
   padding: 0;
   cursor: pointer;
-  transition: transform 220ms ease, filter 220ms ease;
+  transition:
+    transform 220ms ease,
+    filter 220ms ease;
 }
 
 .shape-button:hover,
@@ -209,7 +224,9 @@ canvas {
   background: transparent;
   padding: 0;
   cursor: pointer;
-  transition: transform 220ms ease, filter 220ms ease;
+  transition:
+    transform 220ms ease,
+    filter 220ms ease;
 }
 
 .hero:hover,
@@ -291,7 +308,10 @@ canvas {
   background: transparent;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 320ms ease, visibility 320ms ease, background-color 320ms ease;
+  transition:
+    opacity 320ms ease,
+    visibility 320ms ease,
+    background-color 320ms ease;
 }
 
 .modal-layer.is-open,
@@ -307,7 +327,9 @@ canvas {
   min-height: 430px;
   padding: 74px 28px 32px;
   border: 2px solid var(--accent);
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(246, 241, 228, 0.06));
+  background: linear-gradient(180deg,
+      rgba(255, 255, 255, 0.04),
+      rgba(246, 241, 228, 0.06));
   box-shadow: 0 24px 40px rgba(0, 0, 0, 0.08);
   backdrop-filter: blur(14px);
   transform: translateY(24px) scale(0.96);
@@ -323,7 +345,9 @@ canvas {
 .modal-sheen {
   position: absolute;
   inset: 20px;
-  background: radial-gradient(circle at 70% 18%, rgba(255, 255, 255, 0.08), transparent 24%);
+  background: radial-gradient(circle at 70% 18%,
+      rgba(255, 255, 255, 0.08),
+      transparent 24%);
   pointer-events: none;
 }
 
@@ -468,6 +492,11 @@ canvas {
 .game-screen-result {
   place-items: center;
   padding: 28px 26px 22px;
+}
+
+.game-screen-result {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .game-intro-body,
@@ -643,6 +672,108 @@ canvas {
   font-weight: 900;
 }
 
+.ranking-form {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin: 0 0 20px;
+}
+
+.ranking-name-input {
+  width: 140px;
+  height: 44px;
+  border: 3px solid var(--game-frame);
+  background: var(--game-bg);
+  color: var(--ink);
+  font-size: 1.1rem;
+  font-family: inherit;
+  padding: 0 10px;
+  outline: none;
+}
+
+.ranking-name-input::placeholder {
+  color: #aaa;
+}
+
+.ranking-submit {
+  height: 44px;
+  padding: 0 16px;
+  border: 3px solid var(--game-frame);
+  background: var(--accent);
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.ranking-submit:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.ranking-board {
+  margin: 16px 0 20px;
+  width: 100%;
+  max-width: 280px;
+}
+
+.ranking-board h3 {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+  font-weight: 900;
+  color: var(--accent-strong);
+}
+
+.ranking-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.95rem;
+}
+
+.ranking-list li {
+  display: flex;
+  justify-content: space-between;
+  padding: 5px 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.ranking-list li:nth-child(-n+3) .ranking-rank {
+  color: var(--accent-strong);
+  font-weight: 900;
+}
+
+.ranking-rank {
+  width: 28px;
+  text-align: left;
+  font-weight: 700;
+}
+
+.ranking-player-name {
+  flex: 1;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ranking-player-time {
+  font-weight: 700;
+  margin-left: 8px;
+}
+
+.ranking-message {
+  font-size: 0.9rem;
+  color: #999;
+  margin: 8px 0;
+}
+
+.game-result-body {
+  overflow-y: auto;
+  max-height: 100%;
+}
+
 @keyframes loadingFloat {
   from {
     transform: translateY(-8px);
@@ -654,6 +785,7 @@ canvas {
 }
 
 @keyframes mascotWiggle {
+
   0%,
   74%,
   100% {
@@ -682,6 +814,7 @@ canvas {
 }
 
 @media (max-width: 380px) {
+
   .shape-top-left,
   .shape-bottom-left {
     left: 18px;
@@ -814,6 +947,7 @@ canvas {
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
