@@ -7,6 +7,7 @@
       content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     />
     <title>新入生歓迎 | サークル特設ページ</title>
+    <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
     <style>
       :root {
         --bg: #f6f1e4;
@@ -515,6 +516,11 @@
         padding: 28px 26px 22px;
       }
 
+      .game-screen-result {
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+
       .game-intro-body,
       .game-result-body {
         width: 100%;
@@ -686,6 +692,108 @@
         font-size: clamp(3.6rem, 13vw, 5rem);
         line-height: 1;
         font-weight: 900;
+      }
+
+      .ranking-form {
+        display: flex;
+        gap: 8px;
+        justify-content: center;
+        margin: 0 0 20px;
+      }
+
+      .ranking-name-input {
+        width: 140px;
+        height: 44px;
+        border: 3px solid var(--game-frame);
+        background: var(--game-bg);
+        color: var(--ink);
+        font-size: 1.1rem;
+        font-family: inherit;
+        padding: 0 10px;
+        outline: none;
+      }
+
+      .ranking-name-input::placeholder {
+        color: #aaa;
+      }
+
+      .ranking-submit {
+        height: 44px;
+        padding: 0 16px;
+        border: 3px solid var(--game-frame);
+        background: var(--accent);
+        color: var(--ink);
+        font-size: 1rem;
+        font-weight: 700;
+        font-family: inherit;
+        cursor: pointer;
+      }
+
+      .ranking-submit:disabled {
+        opacity: 0.5;
+        cursor: default;
+      }
+
+      .ranking-board {
+        margin: 16px 0 20px;
+        width: 100%;
+        max-width: 280px;
+      }
+
+      .ranking-board h3 {
+        margin: 0 0 8px;
+        font-size: 1.1rem;
+        font-weight: 900;
+        color: var(--accent-strong);
+      }
+
+      .ranking-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        font-size: 0.95rem;
+      }
+
+      .ranking-list li {
+        display: flex;
+        justify-content: space-between;
+        padding: 5px 8px;
+        border-bottom: 1px solid rgba(0,0,0,0.08);
+      }
+
+      .ranking-list li:nth-child(-n+3) .ranking-rank {
+        color: var(--accent-strong);
+        font-weight: 900;
+      }
+
+      .ranking-rank {
+        width: 28px;
+        text-align: left;
+        font-weight: 700;
+      }
+
+      .ranking-player-name {
+        flex: 1;
+        text-align: left;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .ranking-player-time {
+        font-weight: 700;
+        margin-left: 8px;
+      }
+
+      .ranking-message {
+        font-size: 0.9rem;
+        color: #999;
+        margin: 8px 0;
+      }
+
+      .game-result-body {
+        overflow-y: auto;
+        max-height: 100%;
       }
 
       @keyframes loadingFloat {
@@ -1100,6 +1208,15 @@
                 <h2>CLEAR!</h2>
                 <p class="result-label">TIME</p>
                 <p class="result-time">0:00</p>
+                <div class="ranking-form">
+                  <input class="ranking-name-input" type="text" placeholder="名前" maxlength="12" />
+                  <button class="ranking-submit" type="button">登録</button>
+                </div>
+                <div class="ranking-board">
+                  <h3>RANKING TOP 10</h3>
+                  <p class="ranking-message">読み込み中...</p>
+                  <ol class="ranking-list"></ol>
+                </div>
                 <button class="game-replay" type="button">REPLAY</button>
                 <p class="game-note">終わる場合は左上の×をタップ</p>
               </div>
@@ -1110,6 +1227,21 @@
     </div>
 
     <script>
+      const SUPABASE_URL = "https://qsbqawjpkwxawsaluuga.supabase.co";
+      const SUPABASE_KEY = "sb_publishable_-MgBtWaAp2RuziOkI2xf2Q_JKlNLBPi";
+      let db = null;
+      const getDb = () => {
+        if (db) return db;
+        try {
+          if (window.supabase && window.supabase.createClient) {
+            db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+          }
+        } catch (e) {
+          console.warn("Supabase初期化失敗:", e);
+        }
+        return db;
+      };
+
       const modalData = {
         time: {
           title: "活動時間",
@@ -1184,6 +1316,10 @@
       const gameTimer = document.querySelector(".game-timer");
       const resultTime = document.querySelector(".result-time");
       const gameScreens = document.querySelectorAll(".game-screen");
+      const rankingNameInput = document.querySelector(".ranking-name-input");
+      const rankingSubmit = document.querySelector(".ranking-submit");
+      const rankingList = document.querySelector(".ranking-list");
+      const rankingMessage = document.querySelector(".ranking-message");
       const leftButton = document.querySelector(".control-left");
       const rightButton = document.querySelector(".control-right");
       const fireButton = document.querySelector(".control-fire");
@@ -1435,12 +1571,81 @@
         game.rafId = requestAnimationFrame(gameLoop);
       };
 
+      const fetchRankings = async () => {
+        const client = getDb();
+        if (!client) {
+          rankingMessage.textContent = "接続できませんでした";
+          rankingList.innerHTML = "";
+          return;
+        }
+        try {
+          const { data, error } = await client
+            .from("rankings")
+            .select("name, time_ms")
+            .order("time_ms", { ascending: true })
+            .limit(10);
+          if (error) throw error;
+          if (!data || data.length === 0) {
+            rankingMessage.textContent = "まだ記録がありません";
+            rankingList.innerHTML = "";
+            return;
+          }
+          rankingMessage.textContent = "";
+          rankingList.innerHTML = data
+            .map(
+              (r, i) =>
+                `<li><span class="ranking-rank">${i + 1}.</span><span class="ranking-player-name">${escapeHtml(r.name)}</span><span class="ranking-player-time">${formatTime(r.time_ms)}</span></li>`,
+            )
+            .join("");
+        } catch (e) {
+          console.warn("ランキング取得失敗:", e);
+          rankingMessage.textContent = "接続できませんでした";
+          rankingList.innerHTML = "";
+        }
+      };
+
+      const submitScore = async (name, timeMs) => {
+        const client = getDb();
+        if (!client) {
+          rankingMessage.textContent = "接続できませんでした";
+          return;
+        }
+        try {
+          const { error } = await client
+            .from("rankings")
+            .insert({ name, time_ms: timeMs });
+          if (error) throw error;
+          await fetchRankings();
+        } catch (e) {
+          console.warn("スコア送信失敗:", e);
+          rankingMessage.textContent = "送信できませんでした";
+        }
+      };
+
+      const escapeHtml = (str) =>
+        str.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
+
       const finishGame = () => {
         game.running = false;
         stopGameLoop();
         resultTime.textContent = formatTime(game.timerMs);
+        rankingSubmit.disabled = false;
+        rankingNameInput.value = "";
+        rankingMessage.textContent = "読み込み中...";
+        rankingList.innerHTML = "";
         showGameScreen("result");
+        fetchRankings();
       };
+
+      rankingSubmit.addEventListener("click", () => {
+        const name = rankingNameInput.value.trim();
+        if (!name) {
+          rankingNameInput.focus();
+          return;
+        }
+        rankingSubmit.disabled = true;
+        submitScore(name, Math.round(game.timerMs));
+      });
 
       function stopGameLoop() {
         game.running = false;
