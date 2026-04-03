@@ -34,8 +34,8 @@ const modalData = {
   },
   place: {
     title: "活動場所",
-    jp: "サークル棟 2F\nものづくりスペース",
-    en: "We meet on the 2nd floor of the club building.\nLook for the maker space sign near the stairs.",
+    jp: "サークル棟 2F\n右側",
+    en: "We meet on the 2nd floor of the club building.\nLook for the space to the right of the stairs.",
     icon: `
       <svg viewBox="0 0 64 64" aria-hidden="true">
         <path d="M32 54s15-16 15-27a15 15 0 1 0-30 0c0 11 15 27 15 27Z"></path>
