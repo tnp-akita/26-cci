@@ -1,2058 +1,356 @@
-﻿<!doctype html>
+<!DOCTYPE html>
 <html lang="ja">
-  <head>
-    <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
-    />
-    <title>新入生歓迎 | サークル特設ページ</title>
-    <script async src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-    <style>
-      :root {
-        --bg: #f6f1e4;
-        --panel: rgba(246, 241, 228, 0.82);
-        --ink: #191919;
-        --accent: #b4dd44;
-        --accent-strong: #9dcf2a;
-        --shadow: rgba(0, 0, 0, 0.16);
-        --overlay: rgba(42, 44, 48, 0.78);
-        --white: #fffdf8;
-        --game-frame: #bcdd43;
-        --game-bg: #fbf6d9;
-        --game-normal: #bfd3bd;
-        --game-hard: #7da6b5;
-        --game-special: #8f78a9;
-        --game-paddle: #ff9b00;
-        --celebrate: #ffa5e8;
-      }
 
-      * {
-        box-sizing: border-box;
-      }
-
-      html,
-      body {
-        margin: 0;
-        min-height: 100%;
-      }
-
-      body {
-        font-family: "Zen Kaku Gothic New", sans-serif;
-        background:
-          radial-gradient(
-            circle at top,
-            rgba(255, 255, 255, 0.65),
-            transparent 34%
-          ),
-          linear-gradient(180deg, #faf5eb 0%, var(--bg) 100%);
-        color: var(--ink);
-        overflow: hidden;
-        -webkit-user-select: none;
-        user-select: none;
-        -webkit-touch-callout: none;
-        -webkit-tap-highlight-color: transparent;
-      }
-
-      button {
-        font: inherit;
-        touch-action: manipulation;
-      }
-
-      img,
-      svg,
-      canvas {
-        -webkit-user-drag: none;
-        -webkit-touch-callout: none;
-      }
-
-      .app-shell {
-        position: relative;
-        width: 100%;
-        min-height: 100vh;
-        overflow: hidden;
-      }
-
-      .loading-screen,
-      .home-screen,
-      .modal-layer,
-      .game-layer {
-        position: absolute;
-        inset: 0;
-      }
-
-      .loading-screen {
-        display: grid;
-        place-items: center;
-        padding: 24px;
-        background:
-          radial-gradient(
-            circle at 50% 35%,
-            rgba(180, 221, 68, 0.2),
-            transparent 26%
-          ),
-          linear-gradient(
-            180deg,
-            rgba(255, 255, 255, 0.88),
-            rgba(246, 241, 228, 0.96)
-          );
-        z-index: 30;
-        transition:
-          opacity 900ms ease,
-          visibility 900ms ease,
-          transform 900ms ease;
-      }
-
-      .loading-screen.is-hidden {
-        opacity: 0;
-        visibility: hidden;
-        transform: scale(1.03);
-        pointer-events: none;
-      }
-
-      .loading-copy {
-        text-align: center;
-        animation: loadingFloat 1.7s ease-in-out infinite alternate;
-      }
-
-      .loading-kicker {
-        margin: 0 0 14px;
-        font-size: 0.82rem;
-        letter-spacing: 0.36em;
-        color: rgba(25, 25, 25, 0.6);
-      }
-
-      .loading-copy h1 {
-        margin: 0;
-        font-size: clamp(1.9rem, 7vw, 2.6rem);
-        font-weight: 700;
-        color: var(--accent-strong);
-        text-shadow: 0 12px 24px rgba(180, 221, 68, 0.12);
-      }
-
-      .home-screen {
-        opacity: 0;
-        transform: translateY(16px) scale(0.985);
-        transition:
-          opacity 900ms ease,
-          transform 900ms ease;
-      }
-
-      .home-screen.is-visible {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-      }
-
-      .content-layer {
-        position: relative;
-        min-height: 100vh;
-        padding: max(18px, env(safe-area-inset-top)) 22px
-          max(24px, env(safe-area-inset-bottom));
-        transition:
-          filter 420ms ease,
-          transform 420ms ease;
-      }
-
-      .site-badge {
-        position: absolute;
-        top: 24px;
-        left: 50%;
-        transform: translateX(-50%);
-        margin: 0;
-        width: min(78vw, 260px);
-        text-align: center;
-        color: var(--accent-strong);
-        font-size: clamp(1rem, 3.8vw, 1.45rem);
-        line-height: 1.35;
-        font-weight: 700;
-      }
-
-      .content-layer.is-blurred {
-        filter: blur(10px) grayscale(0.42) brightness(0.6) saturate(0.42);
-        transform: scale(0.985);
-      }
-
-      .shape-button {
-        position: absolute;
-        width: 60px;
-        height: 60px;
-        border: 0;
-        background: transparent;
-        padding: 0;
-        cursor: pointer;
-        transition:
-          transform 220ms ease,
-          filter 220ms ease;
-      }
-
-      .shape-button:hover,
-      .shape-button:focus-visible,
-      .hero:hover,
-      .hero:focus-visible {
-        filter: drop-shadow(0 8px 14px rgba(180, 221, 68, 0.18));
-        outline: none;
-      }
-
-      .icon-frame {
-        display: grid;
-        place-items: center;
-        width: 100%;
-        height: 100%;
-        border: 3px solid var(--accent);
-      }
-
-      .icon-frame svg {
-        width: 38px;
-        height: 38px;
-        fill: none;
-        stroke: var(--accent);
-        stroke-width: 3;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-      }
-
-      .shape-top-left {
-        top: 98px;
-        left: 28px;
-      }
-
-      .shape-top-right {
-        top: 98px;
-        right: 28px;
-      }
-
-      .shape-bottom-left {
-        bottom: 76px;
-        left: 28px;
-      }
-
-      .shape-bottom-right {
-        bottom: 76px;
-        right: 28px;
-      }
-
-      .hero {
-        position: absolute;
-        left: 50%;
-        top: 51.5%;
-        width: min(80vw, 330px);
-        aspect-ratio: 1;
-        transform: translate(-50%, -50%);
-        border: 0;
-        background: transparent;
-        padding: 0;
-        cursor: pointer;
-        transition:
-          transform 220ms ease,
-          filter 220ms ease;
-      }
-
-      .hero:hover,
-      .hero:focus-visible {
-        transform: translate(-50%, -50%) scale(1.05);
-      }
-
-      .hero-image {
-        display: block;
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-        filter: drop-shadow(0 20px 24px rgba(0, 0, 0, 0.08));
-        transform-origin: 50% 78%;
-        animation: mascotWiggle 5.6s ease-in-out infinite;
-        pointer-events: none;
-      }
-
-      .guide-rotator {
-        position: absolute;
-        left: 50%;
-        top: calc(51.5% + min(40vw, 186px));
-        width: min(78vw, 320px);
-        height: 92px;
-        transform: translateX(-50%);
-        perspective: 1200px;
-      }
-
-      .guide-card {
-        position: absolute;
-        inset: 0;
-        display: grid;
-        place-items: center;
-        align-content: center;
-        gap: 8px;
-        text-align: center;
-        backface-visibility: hidden;
-        transform-origin: 50% 50%;
-        transform: rotateY(-90deg);
-        opacity: 0;
-        transition:
-          transform 320ms cubic-bezier(0.2, 0.75, 0.2, 1),
-          opacity 160ms ease;
-      }
-
-      .guide-card.is-active {
-        transform: rotateY(0deg);
-        opacity: 1;
-      }
-
-      .guide-jp,
-      .guide-en {
-        margin: 0;
-        color: var(--accent-strong);
-      }
-
-      .guide-card-celebrate .guide-jp,
-      .guide-card-celebrate .guide-en {
-        color: var(--celebrate);
-      }
-
-      .guide-jp {
-        font-size: clamp(1.6rem, 7vw, 2.25rem);
-        font-weight: 500;
-        line-height: 1.1;
-      }
-
-      .guide-en {
-        font-size: clamp(1rem, 4.2vw, 1.35rem);
-        font-weight: 700;
-        line-height: 1.1;
-      }
-
-      .modal-layer,
-      .game-layer {
-        display: grid;
-        place-items: center;
-        padding: 24px;
-        background: transparent;
-        opacity: 0;
-        visibility: hidden;
-        transition:
-          opacity 320ms ease,
-          visibility 320ms ease,
-          background-color 320ms ease;
-      }
-
-      .modal-layer.is-open,
-      .game-layer.is-open {
-        background: var(--overlay);
-        opacity: 1;
-        visibility: visible;
-      }
-
-      .info-modal {
-        position: relative;
-        width: min(100%, 360px);
-        min-height: 430px;
-        padding: 74px 28px 32px;
-        border: 2px solid var(--accent);
-        background: linear-gradient(
-          180deg,
-          rgba(255, 255, 255, 0.04),
-          rgba(246, 241, 228, 0.06)
-        );
-        box-shadow: 0 24px 40px rgba(0, 0, 0, 0.08);
-        backdrop-filter: blur(14px);
-        transform: translateY(24px) scale(0.96);
-        transition: transform 340ms ease;
-        overflow: hidden;
-      }
-
-      .modal-layer.is-open .info-modal,
-      .game-layer.is-open .game-panel {
-        transform: translateY(0) scale(1);
-      }
-
-      .modal-sheen {
-        position: absolute;
-        inset: 20px;
-        background: radial-gradient(
-          circle at 70% 18%,
-          rgba(255, 255, 255, 0.08),
-          transparent 24%
-        );
-        pointer-events: none;
-      }
-
-      .modal-close {
-        position: absolute;
-        top: -2px;
-        left: -2px;
-        width: 56px;
-        height: 56px;
-        border: 2px solid var(--accent);
-        background: rgba(246, 241, 228, 0.08);
-        cursor: pointer;
-      }
-
-      .modal-close span,
-      .game-close span {
-        position: absolute;
-        left: 50%;
-        top: 50%;
-        width: 30px;
-        height: 2px;
-        background: var(--accent);
-      }
-
-      .modal-close span:first-child,
-      .game-close span:first-child {
-        transform: translate(-50%, -50%) rotate(45deg);
-      }
-
-      .modal-close span:last-child,
-      .game-close span:last-child {
-        transform: translate(-50%, -50%) rotate(-45deg);
-      }
-
-      .modal-copy {
-        text-align: center;
-        color: var(--accent);
-      }
-
-      .modal-copy h2 {
-        margin: 0 0 24px;
-        font-size: clamp(2rem, 8vw, 2.8rem);
-        line-height: 1.15;
-      }
-
-      .modal-jp {
-        margin: 0;
-        font-size: clamp(1.2rem, 5vw, 1.8rem);
-        line-height: 1.45;
-        font-weight: 700;
-        white-space: pre-line;
-      }
-
-      .modal-en {
-        margin: 30px auto 0;
-        max-width: 260px;
-        font-size: clamp(0.95rem, 3.5vw, 1.15rem);
-        line-height: 1.45;
-        font-weight: 700;
-        white-space: pre-line;
-      }
-
-      .modal-icon {
-        display: grid;
-        place-items: center;
-        width: 58px;
-        height: 58px;
-        margin: 34px auto 0;
-        border: 2px solid var(--accent);
-      }
-
-      .modal-icon svg {
-        width: 38px;
-        height: 38px;
-        fill: none;
-        stroke: var(--accent);
-        stroke-width: 3;
-        stroke-linecap: round;
-        stroke-linejoin: round;
-      }
-
-      .game-panel {
-        width: min(100%, 404px);
-        min-height: min(92vh, 760px);
-        background: var(--game-bg);
-        border: 3px solid var(--game-frame);
-        box-shadow: 0 24px 40px rgba(0, 0, 0, 0.12);
-        transform: translateY(24px) scale(0.96);
-        transition: transform 340ms ease;
-        display: grid;
-        grid-template-rows: auto 1fr;
-        overflow: hidden;
-      }
-
-      .game-topbar {
-        display: grid;
-        grid-template-columns: 70px 1fr 118px;
-        border-bottom: 3px solid var(--game-frame);
-        color: var(--accent-strong);
-        background: rgba(255, 251, 230, 0.96);
-      }
-
-      .game-close,
-      .game-mission,
-      .game-timer {
-        min-height: 58px;
-        display: grid;
-        place-items: center;
-      }
-
-      .game-close {
-        position: relative;
-        border: 0;
-        border-right: 3px solid var(--game-frame);
-        background: transparent;
-        cursor: pointer;
-      }
-
-      .game-mission {
-        padding: 8px 12px;
-        font-size: 0.95rem;
-        font-weight: 700;
-        text-align: center;
-      }
-
-      .game-timer {
-        border-left: 3px solid var(--game-frame);
-        font-size: clamp(1.8rem, 7vw, 2.2rem);
-        font-weight: 900;
-      }
-
-      .game-screen {
-        display: none;
-        min-height: 0;
-      }
-
-      .game-screen.is-active {
-        display: grid;
-      }
-
-      .game-screen-intro,
-      .game-screen-result {
-        place-items: center;
-        padding: 28px 26px 22px;
-      }
-
-      .game-screen-result {
-        overflow-y: auto;
-        -webkit-overflow-scrolling: touch;
-      }
-
-      .game-intro-body,
-      .game-result-body {
-        width: 100%;
-        text-align: center;
-        color: var(--accent-strong);
-      }
-
-      .game-subtitle {
-        margin: 56px 0 8px;
-        font-size: clamp(1.5rem, 5vw, 2rem);
-      }
-
-      .game-intro-body h2,
-      .game-result-body h2 {
-        margin: 0;
-        font-size: clamp(3rem, 12vw, 4.5rem);
-        line-height: 1.05;
-        font-weight: 500;
-      }
-
-      .game-intro-ammo {
-        display: block;
-        width: 22px;
-        height: 120px;
-        object-fit: contain;
-        margin: 38px auto 28px;
-      }
-
-      .game-start,
-      .game-replay {
-        width: min(100%, 228px);
-        height: 78px;
-        border: 4px solid var(--game-frame);
-        background: transparent;
-        color: var(--accent-strong);
-        font-size: clamp(2.2rem, 10vw, 3rem);
-        font-weight: 900;
-        cursor: pointer;
-      }
-
-      .game-note {
-        margin: 44px 0 0;
-        font-size: clamp(1.25rem, 4.8vw, 1.9rem);
-      }
-
-      .game-footnote {
-        margin: 58px 0 0;
-        font-size: clamp(1rem, 4vw, 1.5rem);
-        line-height: 1.45;
-      }
-
-      .game-screen-play {
-        grid-template-rows: auto auto 1fr;
-      }
-
-      .game-playfield {
-        padding: 0;
-        border-bottom: 3px solid var(--game-frame);
-      }
-
-      .game-canvas {
-        display: block;
-        width: 100%;
-        height: auto;
-        background: linear-gradient(180deg, #fbf8dd 0%, #f8f4d6 100%);
-      }
-
-      .game-controls {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        align-items: stretch;
-        gap: 12px;
-        padding: 16px 18px 8px;
-        border-bottom: 3px solid var(--game-frame);
-      }
-
-      .control-button {
-        border: 0;
-        background: transparent;
-        color: var(--accent-strong);
-        display: grid;
-        place-items: center;
-        gap: 8px;
-        padding: 0 0 10px;
-        cursor: pointer;
-      }
-
-      .control-triangle {
-        width: 0;
-        height: 0;
-        border-top: 44px solid transparent;
-        border-bottom: 44px solid transparent;
-      }
-
-      .control-triangle.left {
-        border-right: 92px solid var(--accent);
-      }
-
-      .control-triangle.right {
-        border-left: 92px solid var(--accent);
-      }
-
-      .control-square {
-        width: 90px;
-        height: 88px;
-        border-radius: 26px;
-        background: var(--accent);
-      }
-
-      .control-label {
-        font-size: 1rem;
-        font-weight: 900;
-        letter-spacing: 0.04em;
-      }
-
-      .game-legend {
-        padding: 18px 24px 22px;
-        color: var(--accent-strong);
-        font-size: clamp(1rem, 3.8vw, 1.2rem);
-      }
-
-      .legend-title {
-        margin: 0 0 10px;
-        font-weight: 700;
-      }
-
-      .legend-row {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-top: 8px;
-        font-weight: 700;
-      }
-
-      .legend-secret {
-        margin: 14px 0 0;
-        color: #ff9b00;
-        font-weight: 900;
-        font-size: clamp(0.95rem, 3.7vw, 1.1rem);
-      }
-
-      .legend-swatch {
-        display: inline-block;
-        width: 58px;
-        height: 22px;
-      }
-
-      .legend-normal {
-        background: var(--game-normal);
-      }
-
-      .legend-hard {
-        background: var(--game-hard);
-      }
-
-      .legend-special {
-        background: var(--game-special);
-      }
-
-      .result-label {
-        margin: 56px 0 0;
-        font-size: clamp(2.8rem, 9vw, 3.8rem);
-        line-height: 1;
-        font-weight: 900;
-      }
-
-      .result-time {
-        margin: 14px 0 36px;
-        font-size: clamp(3.6rem, 13vw, 5rem);
-        line-height: 1;
-        font-weight: 900;
-      }
-
-      .ranking-form {
-        display: flex;
-        gap: 8px;
-        justify-content: center;
-        margin: 0 0 20px;
-      }
-
-      .ranking-name-input {
-        width: 140px;
-        height: 44px;
-        border: 3px solid var(--game-frame);
-        background: var(--game-bg);
-        color: var(--ink);
-        font-size: 1.1rem;
-        font-family: inherit;
-        padding: 0 10px;
-        outline: none;
-      }
-
-      .ranking-name-input::placeholder {
-        color: #aaa;
-      }
-
-      .ranking-submit {
-        height: 44px;
-        padding: 0 16px;
-        border: 3px solid var(--game-frame);
-        background: var(--accent);
-        color: var(--ink);
-        font-size: 1rem;
-        font-weight: 700;
-        font-family: inherit;
-        cursor: pointer;
-      }
-
-      .ranking-submit:disabled {
-        opacity: 0.5;
-        cursor: default;
-      }
-
-      .ranking-board {
-        margin: 16px 0 20px;
-        width: 100%;
-        max-width: 280px;
-      }
-
-      .ranking-board h3 {
-        margin: 0 0 8px;
-        font-size: 1.1rem;
-        font-weight: 900;
-        color: var(--accent-strong);
-      }
-
-      .ranking-list {
-        list-style: none;
-        margin: 0;
-        padding: 0;
-        font-size: 0.95rem;
-      }
-
-      .ranking-list li {
-        display: flex;
-        justify-content: space-between;
-        padding: 5px 8px;
-        border-bottom: 1px solid rgba(0,0,0,0.08);
-      }
-
-      .ranking-list li:nth-child(-n+3) .ranking-rank {
-        color: var(--accent-strong);
-        font-weight: 900;
-      }
-
-      .ranking-rank {
-        width: 28px;
-        text-align: left;
-        font-weight: 700;
-      }
-
-      .ranking-player-name {
-        flex: 1;
-        text-align: left;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-
-      .ranking-player-time {
-        font-weight: 700;
-        margin-left: 8px;
-      }
-
-      .ranking-message {
-        font-size: 0.9rem;
-        color: #999;
-        margin: 8px 0;
-      }
-
-      .game-result-body {
-        overflow-y: auto;
-        max-height: 100%;
-      }
-
-      @keyframes loadingFloat {
-        from {
-          transform: translateY(-8px);
-        }
-
-        to {
-          transform: translateY(8px);
-        }
-      }
-
-      @keyframes mascotWiggle {
-        0%,
-        74%,
-        100% {
-          transform: rotate(0deg) translateY(0);
-        }
-
-        78% {
-          transform: rotate(-1.6deg) translateY(-2px);
-        }
-
-        82% {
-          transform: rotate(1.4deg) translateY(0);
-        }
-
-        86% {
-          transform: rotate(-1deg) translateY(-1px);
-        }
-
-        90% {
-          transform: rotate(0.8deg) translateY(0);
-        }
-
-        94% {
-          transform: rotate(0deg) translateY(0);
-        }
-      }
-
-      @media (max-width: 380px) {
-        .shape-top-left,
-        .shape-bottom-left {
-          left: 18px;
-        }
-
-        .shape-top-right,
-        .shape-bottom-right {
-          right: 18px;
-        }
-
-        .hero {
-          width: min(84vw, 300px);
-          top: 50%;
-        }
-
-        .site-badge {
-          top: 18px;
-          width: min(82vw, 240px);
-          font-size: 0.98rem;
-        }
-
-        .guide-rotator {
-          top: calc(50% + min(41vw, 172px));
-          width: min(82vw, 300px);
-          height: 84px;
-        }
-
-        .info-modal {
-          min-height: 400px;
-          padding-inline: 22px;
-        }
-
-        .game-panel {
-          width: min(100%, 392px);
-        }
-
-        .game-topbar {
-          grid-template-columns: 66px 1fr 108px;
-        }
-
-        .game-mission {
-          font-size: 0.82rem;
-        }
-
-        .game-close,
-        .game-mission,
-        .game-timer {
-          min-height: 54px;
-        }
-
-        .control-triangle {
-          border-top-width: 38px;
-          border-bottom-width: 38px;
-        }
-
-        .control-triangle.left {
-          border-right-width: 82px;
-        }
-
-        .control-triangle.right {
-          border-left-width: 82px;
-        }
-
-        .control-square {
-          width: 82px;
-          height: 82px;
-        }
-
-        .game-legend {
-          padding-inline: 18px;
-        }
-      }
-
-      @media (max-height: 760px) {
-        .game-topbar {
-          grid-template-columns: 62px 1fr 96px;
-        }
-
-        .game-close,
-        .game-mission,
-        .game-timer {
-          min-height: 48px;
-        }
-
-        .game-mission {
-          font-size: 0.78rem;
-          padding-inline: 8px;
-        }
-
-        .game-timer {
-          font-size: 1.7rem;
-        }
-
-        .game-screen-intro,
-        .game-screen-result {
-          padding: 18px 18px 18px;
-        }
-
-        .game-subtitle {
-          margin-top: 28px;
-          font-size: 1.25rem;
-        }
-
-        .game-intro-body h2,
-        .game-result-body h2 {
-          font-size: clamp(2.6rem, 11vw, 3.6rem);
-        }
-
-        .game-intro-ammo {
-          margin: 24px auto 20px;
-          height: 96px;
-        }
-
-        .game-start,
-        .game-replay {
-          width: min(100%, 210px);
-          height: 68px;
-          font-size: clamp(2rem, 9vw, 2.8rem);
-        }
-
-        .game-note {
-          margin-top: 26px;
-          font-size: 1rem;
-        }
-
-        .game-footnote {
-          margin-top: 24px;
-          font-size: 0.95rem;
-        }
-      }
-
-      @media (prefers-reduced-motion: reduce) {
-        *,
-        *::before,
-        *::after {
-          animation: none !important;
-          transition-duration: 1ms !important;
-          scroll-behavior: auto !important;
-        }
-      }
-    </style>
-  </head>
-  <body>
-    <div class="app-shell">
-      <section class="loading-screen" aria-hidden="false">
-        <div class="loading-copy">
-          <p class="loading-kicker">WELCOME</p>
-          <h1>入学おめでとうございます!</h1>
-        </div>
-      </section>
-
-      <main class="home-screen" aria-label="サークル紹介ページ">
-        <div class="content-layer">
-          <p class="site-badge">2026 部活・サークル紹介<br />TNP特設サイト</p>
-
-          <button
-            class="shape-button shape-top-left"
-            type="button"
-            data-modal="time"
-            aria-label="活動時間を見る"
-          >
-            <span class="icon-frame">
-              <svg viewBox="0 0 64 64" aria-hidden="true">
-                <circle cx="32" cy="32" r="22"></circle>
-                <path d="M32 18v15"></path>
-                <path d="M32 32l-10 8"></path>
-                <path d="M32 10v4"></path>
-                <path d="M54 32h-4"></path>
-                <path d="M32 54v-4"></path>
-                <path d="M10 32h4"></path>
-              </svg>
-            </span>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>新入生歓迎 | サークル特設ページ</title>
+</head>
+
+<body>
+  <div class="app-shell">
+    <section class="loading-screen" aria-hidden="false">
+      <div class="loading-copy">
+        <p class="loading-kicker">WELCOME</p>
+        <h1>入学おめでとうございます!</h1>
+      </div>
+    </section>
+
+    <main class="home-screen" aria-label="サークル紹介ページ">
+      <div class="content-layer">
+        <p class="site-badge">2026 部活・サークル紹介<br>TNP特設サイト</p>
+
+        <button class="shape-button shape-top-left" type="button" data-modal="time" aria-label="活動時間を見る">
+          <span class="icon-frame">
+            <svg viewBox="0 0 64 64" aria-hidden="true">
+              <circle cx="32" cy="32" r="22"></circle>
+              <path d="M32 18v15"></path>
+              <path d="M32 32l-10 8"></path>
+              <path d="M32 10v4"></path>
+              <path d="M54 32h-4"></path>
+              <path d="M32 54v-4"></path>
+              <path d="M10 32h4"></path>
+            </svg>
+          </span>
+        </button>
+
+        <button class="shape-button shape-top-right" type="button" data-modal="place" aria-label="活動場所を見る">
+          <span class="icon-frame">
+            <svg viewBox="0 0 64 64" aria-hidden="true">
+              <path d="M32 54s15-16 15-27a15 15 0 1 0-30 0c0 11 15 27 15 27Z"></path>
+              <circle cx="32" cy="27" r="6"></circle>
+            </svg>
+          </span>
+        </button>
+
+        <button class="hero" type="button" aria-label="ミニゲームを開く">
+          <div class="hero-image">
+            <svg id="_レイヤー_2" data-name="レイヤー 2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 283.5 323.48">
+              <defs>
+                <style>
+                  .cls-1 {
+                    fill: #4d4d4d;
+                  }
+
+                  .cls-1,
+                  .cls-2,
+                  .cls-3,
+                  .cls-4,
+                  .cls-5,
+                  .cls-6,
+                  .cls-7,
+                  .cls-8,
+                  .cls-9,
+                  .cls-10,
+                  .cls-11 {
+                    stroke-width: 0px;
+                  }
+
+                  .cls-2 {
+                    fill: #030017;
+                  }
+
+                  .cls-3 {
+                    fill: #1a1a1a;
+                  }
+
+                  .cls-4 {
+                    fill: #aad350;
+                  }
+
+                  .cls-5 {
+                    fill: lime;
+                  }
+
+                  .cls-6 {
+                    fill: #f2f2f2;
+                  }
+
+                  .cls-7 {
+                    fill: #003dff;
+                  }
+
+                  .cls-8 {
+                    fill: red;
+                  }
+
+                  .cls-9 {
+                    fill: #ccc;
+                  }
+
+                  .cls-10 {
+                    fill: #fff;
+                  }
+
+                  .cls-11 {
+                    fill: #e6e6e6;
+                  }
+                </style>
+              </defs>
+              <g id="_レイヤー_1-2" data-name="レイヤー 1">
+                <g id="_レイヤー_1-2" data-name=" レイヤー 1-2">
+                  <g>
+                    <g>
+                      <g>
+                        <path class="cls-3"
+                          d="M136.35,27.21L9.46,90.66c-5.8,2.9-9.46,8.83-9.46,15.31v140.84c0,6.48,3.66,12.41,9.46,15.31l62.54,32.17c4.82,2.41,10.49,2.41,15.31,0l126.88-63.44c5.8-2.9,9.46-8.83,9.46-15.31V74.69c0-6.48-3.66-12.41-9.46-15.31l-62.54-32.17c-4.82-2.41-10.49-2.41-15.31,0h.01Z" />
+                        <g>
+                          <path class="cls-7"
+                            d="M213.15,107.92v61.27c0,6.39-3.61,12.23-9.33,15.09l-92.25,46.13c-11.22,5.61-24.42-2.55-24.42-15.09v-61.27c0-6.39,3.61-12.23,9.33-15.09l92.25-46.13c11.22-5.61,24.42,2.55,24.42,15.09Z" />
+                          <path class="cls-8"
+                            d="M213.15,110.92v61.27c0,6.39-3.61,12.23-9.33,15.09l-92.25,46.13c-11.22,5.61-24.42-2.55-24.42-15.09v-61.27c0-6.39,3.61-12.23,9.33-15.09l92.25-46.13c11.22-5.61,24.42,2.55,24.42,15.09Z" />
+                          <path class="cls-5"
+                            d="M216.15,110.92v61.27c0,6.39-3.61,12.23-9.33,15.09l-92.25,46.13c-11.22,5.61-24.42-2.55-24.42-15.09v-61.27c0-6.39,3.61-12.23,9.33-15.09l92.25-46.13c11.22-5.61,24.42,2.55,24.42,15.09Z" />
+                          <path class="cls-10"
+                            d="M214.65,109.42v61.27c0,6.39-3.61,12.23-9.33,15.09l-92.25,46.13c-11.22,5.61-24.42-2.55-24.42-15.09v-61.27c0-6.39,3.61-12.23,9.33-15.09l92.25-46.13c11.22-5.61,24.42,2.55,24.42,15.09Z" />
+                        </g>
+                        <path class="cls-9"
+                          d="M277.34,231.8l-51.69-25.84c-3.23-1.62-7.04-1.57-10.23.13l-124.02,66.14c-3.63,1.94-5.9,5.72-5.9,9.84v4.42c0,4.22,2.39,8.08,6.16,9.97l51.69,25.84c3.23,1.62,7.04,1.57,10.23-.13l124.02-66.14c3.63-1.94,5.9-5.72,5.9-9.84v-4.42c0-4.22-2.39-8.08-6.16-9.97h0Z" />
+                        <path class="cls-4"
+                          d="M109.63,50.15c-.29-2.01-.69-7.1,2.43-12.64,1.19-2.12,4.42-7.83,10.21-9.33,5.96-1.55,8.48,2.97,13.76,1.3,6.15-1.94,7.51-9.56,10.21-9.33,2.46.21,4.29,5.69,3.56,10.63-1.46,9.84-12.85,15.82-14.42,16.65-11.43,6-22.95,3.42-25.75,2.71h0Z" />
+                        <rect class="cls-4" x="108" y="47.69" width="5.24" height="26.22" rx="2.03" ry="2.03" />
+                        <g>
+                          <polygon class="cls-2" points="109.5 2.59 108.96 23.49 111.68 23.44 116.09 2.47 109.5 2.59" />
+                          <polygon class="cls-2" points="95.22 6.88 102.17 25.74 104.73 24.83 101.42 4.66 95.22 6.88" />
+                          <polygon class="cls-2" points="82.79 14.79 95.99 29.53 98.15 27.87 88.01 10.77 82.79 14.79" />
+                        </g>
+                        <g>
+                          <path class="cls-6"
+                            d="M16.64,220.59l-2.86-1.43v-4.57L.04,207.72v-3.37l13.74,6.87v-4.57l2.86,1.43v12.51h0Z" />
+                          <path class="cls-6"
+                            d="M16.64,234.91L.04,226.6v-2.81l10.27-1.33L.04,217.32v-3.2l16.6,8.31v2.79l-10.42,1.28,10.42,5.21s0,3.2,0,3.2Z" />
+                          <path class="cls-6"
+                            d="M5.89,236.19L.04,233.26v-3.37l16.6,8.31v5.94c0,3.82-1.76,5.33-5.32,3.55-3.51-1.76-5.44-5.08-5.44-8.93v-2.57h0ZM8.73,239.7c0,2.33.82,3.73,2.6,4.62,1.59.79,2.45.24,2.45-2.09v-2.09l-5.05-2.53v2.09Z" />
+                        </g>
+                      </g>
+                      <g>
+                        <path class="cls-11"
+                          d="M136.35,27.21L9.46,90.66c-5.8,2.9-9.46,8.83-9.46,15.31v140.84c0,6.48,3.66,12.41,9.46,15.31l62.54,32.17c4.82,2.41,10.49,2.41,15.31,0l126.88-63.44c5.8-2.9,9.46-8.83,9.46-15.31V74.69c0-6.48-3.66-12.41-9.46-15.31l-62.54-32.17c-4.82-2.41-10.49-2.41-15.31,0h.01Z" />
+                        <g>
+                          <path class="cls-11"
+                            d="M213.15,107.92v61.27c0,6.39-3.61,12.23-9.33,15.09l-92.25,46.13c-11.22,5.61-24.42-2.55-24.42-15.09v-61.27c0-6.39,3.61-12.23,9.33-15.09l92.25-46.13c11.22-5.61,24.42,2.55,24.42,15.09Z" />
+                          <path class="cls-11"
+                            d="M213.15,110.92v61.27c0,6.39-3.61,12.23-9.33,15.09l-92.25,46.13c-11.22,5.61-24.42-2.55-24.42-15.09v-61.27c0-6.39,3.61-12.23,9.33-15.09l92.25-46.13c11.22-5.61,24.42,2.55,24.42,15.09Z" />
+                          <path class="cls-11"
+                            d="M216.15,110.92v61.27c0,6.39-3.61,12.23-9.33,15.09l-92.25,46.13c-11.22,5.61-24.42-2.55-24.42-15.09v-61.27c0-6.39,3.61-12.23,9.33-15.09l92.25-46.13c11.22-5.61,24.42,2.55,24.42,15.09Z" />
+                          <path class="cls-11"
+                            d="M214.65,109.42v61.27c0,6.39-3.61,12.23-9.33,15.09l-92.25,46.13c-11.22,5.61-24.42-2.55-24.42-15.09v-61.27c0-6.39,3.61-12.23,9.33-15.09l92.25-46.13c11.22-5.61,24.42,2.55,24.42,15.09Z" />
+                          <path class="cls-11"
+                            d="M214.65,109.42v61.27c0,6.39-3.61,12.23-9.33,15.09l-92.25,46.13c-11.22,5.61-24.42-2.55-24.42-15.09v-61.27c0-6.39,3.61-12.23,9.33-15.09l92.25-46.13c11.22-5.61,24.42,2.55,24.42,15.09Z" />
+                        </g>
+                        <path class="cls-11"
+                          d="M277.34,231.8l-51.69-25.84c-3.23-1.62-7.04-1.57-10.23.13l-124.02,66.14c-3.63,1.94-5.9,5.72-5.9,9.84v4.42c0,4.22,2.39,8.08,6.16,9.97l51.69,25.84c3.23,1.62,7.04,1.57,10.23-.13l124.02-66.14c3.63-1.94,5.9-5.72,5.9-9.84v-4.42c0-4.22-2.39-8.08-6.16-9.97h0Z" />
+                        <path class="cls-11"
+                          d="M109.63,50.15c-.29-2.01-.69-7.1,2.43-12.64,1.19-2.12,4.42-7.83,10.21-9.33,5.96-1.55,8.48,2.97,13.76,1.3,6.15-1.94,7.51-9.56,10.21-9.33,2.46.21,4.29,5.69,3.56,10.63-1.46,9.84-12.85,15.82-14.42,16.65-11.43,6-22.95,3.42-25.75,2.71h0Z" />
+                        <rect class="cls-11" x="108" y="47.69" width="5.24" height="26.22" rx="2.03" ry="2.03" />
+                        <g>
+                          <polygon class="cls-11"
+                            points="109.5 2.59 108.96 23.49 111.68 23.44 116.09 2.47 109.5 2.59" />
+                          <polygon class="cls-11"
+                            points="95.22 6.88 102.17 25.74 104.73 24.83 101.42 4.66 95.22 6.88" />
+                          <polygon class="cls-11"
+                            points="82.79 14.79 95.99 29.53 98.15 27.87 88.01 10.77 82.79 14.79" />
+                        </g>
+                        <g>
+                          <path class="cls-11"
+                            d="M16.64,220.59l-2.86-1.43v-4.57L.04,207.72v-3.37l13.74,6.87v-4.57l2.86,1.43v12.51h0Z" />
+                          <path class="cls-11"
+                            d="M16.64,234.91L.04,226.6v-2.81l10.27-1.33L.04,217.32v-3.2l16.6,8.31v2.79l-10.42,1.28,10.42,5.21s0,3.2,0,3.2Z" />
+                          <path class="cls-11"
+                            d="M5.89,236.19L.04,233.26v-3.37l16.6,8.31v5.94c0,3.82-1.76,5.33-5.32,3.55-3.51-1.76-5.44-5.08-5.44-8.93v-2.57h0ZM8.73,239.7c0,2.33.82,3.73,2.6,4.62,1.59.79,2.45.24,2.45-2.09v-2.09l-5.05-2.53v2.09Z" />
+                        </g>
+                      </g>
+                    </g>
+                    <g>
+                      <path class="cls-3"
+                        d="M136.35,20.74L9.46,84.19c-5.8,2.9-9.46,8.83-9.46,15.31v140.84c0,6.48,3.66,12.41,9.46,15.31l62.54,32.17c4.82,2.41,10.49,2.41,15.31,0l126.88-63.44c5.8-2.9,9.46-8.83,9.46-15.31V68.23c0-6.48-3.66-12.41-9.46-15.31l-62.54-32.17c-4.82-2.41-10.49-2.41-15.31,0h.01Z" />
+                      <g>
+                        <path class="cls-7"
+                          d="M213.15,101.45v61.27c0,6.39-3.61,12.23-9.33,15.09l-92.25,46.13c-11.22,5.61-24.42-2.55-24.42-15.09v-61.27c0-6.39,3.61-12.23,9.33-15.09l92.25-46.13c11.22-5.61,24.42,2.55,24.42,15.09Z" />
+                        <path class="cls-8"
+                          d="M213.15,104.45v61.27c0,6.39-3.61,12.23-9.33,15.09l-92.25,46.13c-11.22,5.61-24.42-2.55-24.42-15.09v-61.27c0-6.39,3.61-12.23,9.33-15.09l92.25-46.13c11.22-5.61,24.42,2.55,24.42,15.09Z" />
+                        <path class="cls-5"
+                          d="M216.15,104.45v61.27c0,6.39-3.61,12.23-9.33,15.09l-92.25,46.13c-11.22,5.61-24.42-2.55-24.42-15.09v-61.27c0-6.39,3.61-12.23,9.33-15.09l92.25-46.13c11.22-5.61,24.42,2.55,24.42,15.09Z" />
+                        <path class="cls-10"
+                          d="M214.65,102.95v61.27c0,6.39-3.61,12.23-9.33,15.09l-92.25,46.13c-11.22,5.61-24.42-2.55-24.42-15.09v-61.27c0-6.39,3.61-12.23,9.33-15.09l92.25-46.13c11.22-5.61,24.42,2.55,24.42,15.09Z" />
+                      </g>
+                      <path class="cls-9"
+                        d="M277.34,225.34l-51.69-25.84c-3.23-1.62-7.04-1.57-10.23.13l-124.02,66.14c-3.63,1.94-5.9,5.72-5.9,9.84v4.42c0,4.22,2.39,8.08,6.16,9.97l51.69,25.84c3.23,1.62,7.04,1.57,10.23-.13l124.02-66.14c3.63-1.94,5.9-5.72,5.9-9.84v-4.42c0-4.22-2.39-8.08-6.16-9.97h0Z" />
+                      <path class="cls-4"
+                        d="M111,46.14c.17-6.18-14.7-13.02-24.5-11.12-9.32,1.81-8.47,10.43-23.6,16.65-6.95,2.86-11.99,3.04-11.93,4.36.11,2.29,15.55,4.82,30.27,2.99,10.6-1.31,29.57-5.97,29.76-12.87h0Z" />
+                      <path class="cls-4"
+                        d="M109.63,47.68c-.29-2.01-.69-7.1,2.43-12.64,1.19-2.12,4.42-7.83,10.21-9.33,5.96-1.55,8.48,2.97,13.76,1.3,6.15-1.94,7.51-9.56,10.21-9.33,2.46.21,4.29,5.69,3.56,10.63-1.46,9.84-12.85,15.82-14.42,16.65-11.43,6-22.95,3.42-25.75,2.71h0Z" />
+                      <rect class="cls-4" x="108" y="41.22" width="5.24" height="26.22" rx="2.03" ry="2.03" />
+                      <g>
+                        <polygon class="cls-2" points="109.5 .13 108.96 21.02 111.68 20.97 116.09 0 109.5 .13" />
+                        <polygon class="cls-2" points="95.22 4.41 102.17 23.28 104.73 22.36 101.42 2.2 95.22 4.41" />
+                        <polygon class="cls-2" points="82.79 12.32 95.99 27.06 98.15 25.4 88.01 8.3 82.79 12.32" />
+                      </g>
+                    </g>
+                  </g>
+                  <g>
+                    <path class="cls-9"
+                      d="M121.75,192.22l-.13-26.73-7.18,3.64-.02-4.46,21.54-10.91.02,4.46-7.18,3.64.13,26.73-7.18,3.64h0Z" />
+                    <path class="cls-9"
+                      d="M140.41,182.77l-.16-31.18,7.18-3.64.02,4.46,3.59-1.82.02,4.45,3.59-1.82.02,4.46,3.59-1.82-.07-13.36,7.18-3.64.16,31.18-7.18,3.64-.04-8.91-3.59,1.82-.02-4.46-3.59,1.82-.02-4.46-3.59,1.82.09,17.82-7.18,3.64h0Z" />
+                    <path class="cls-9"
+                      d="M168.13,168.72l-.16-31.18,21.54-10.91.02,4.46,3.59-1.82.07,13.36-3.59,1.82.02,4.46-14.36,7.28.04,8.91-7.18,3.64v-.02ZM175.24,151.72l10.77-5.46-.07-13.36-10.77,5.46.07,13.36Z" />
+                  </g>
+                  <g>
+                    <path class="cls-1"
+                      d="M121.75,188.4l-.13-26.73-7.18,3.64-.02-4.46,21.54-10.91.02,4.46-7.18,3.64.13,26.73-7.18,3.64h0Z" />
+                    <path class="cls-1"
+                      d="M140.41,178.94l-.16-31.18,7.18-3.64.02,4.46,3.59-1.82.02,4.45,3.59-1.82.02,4.46,3.59-1.82-.07-13.36,7.18-3.64.16,31.18-7.18,3.64-.04-8.91-3.59,1.82-.02-4.46-3.59,1.82-.02-4.46-3.59,1.82.09,17.82-7.18,3.64h0Z" />
+                    <path class="cls-1"
+                      d="M168.13,164.9l-.16-31.18,21.54-10.91.02,4.46,3.59-1.82.07,13.36-3.59,1.82.02,4.46-14.36,7.28.04,8.91-7.18,3.64v-.02ZM175.24,147.9l10.77-5.46-.07-13.36-10.77,5.46.07,13.36Z" />
+                  </g>
+                </g>
+              </g>
+            </svg>
+          </div>
+        </button>
+
+        <section class="guide-rotator" aria-label="案内メッセージ">
+          <article class="guide-card is-active" aria-hidden="false">
+            <p class="guide-jp">図形をタップ!</p>
+            <p class="guide-en">Tap the shape!</p>
+          </article>
+          <article class="guide-card" aria-hidden="true">
+            <p class="guide-jp">TNPへようこそ!</p>
+            <p class="guide-en">Welcome to TNP!</p>
+          </article>
+          <article class="guide-card guide-card-celebrate" aria-hidden="true">
+            <p class="guide-jp">ご入学<br>おめでとうございます！</p>
+            <p class="guide-en">Congratulations<br>on entering school!</p>
+          </article>
+        </section>
+
+        <button class="shape-button shape-bottom-left" type="button" data-modal="faq" aria-label="よくある質問を見る">
+          <span class="icon-frame">
+            <svg viewBox="0 0 64 64" aria-hidden="true">
+              <path d="M24 24c0-5 4-9 9-9 6 0 10 3 10 9 0 4-2 6-6 8-4 2-5 4-5 8"></path>
+              <circle cx="31" cy="47" r="2.5"></circle>
+            </svg>
+          </span>
+        </button>
+
+        <button class="shape-button shape-bottom-right" type="button" data-modal="entry" aria-label="参加方法を見る">
+          <span class="icon-frame">
+            <svg viewBox="0 0 64 64" aria-hidden="true">
+              <path d="M18 46 46 18"></path>
+              <path d="M28 18h18v18"></path>
+              <path d="M18 28V18h10"></path>
+              <path d="M46 36v10H36"></path>
+            </svg>
+          </span>
+        </button>
+      </div>
+
+      <div class="modal-layer" aria-live="polite">
+        <section class="info-modal" data-active="false" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+          <button class="modal-close" type="button" aria-label="閉じる">
+            <span></span>
+            <span></span>
           </button>
+          <div class="modal-sheen"></div>
+          <div class="modal-copy">
+            <h2 id="modal-title"></h2>
+            <p class="modal-jp"></p>
+            <p class="modal-en"></p>
+          </div>
+          <div class="modal-icon"></div>
+        </section>
+      </div>
 
-          <button
-            class="shape-button shape-top-right"
-            type="button"
-            data-modal="place"
-            aria-label="活動場所を見る"
-          >
-            <span class="icon-frame">
-              <svg viewBox="0 0 64 64" aria-hidden="true">
-                <path
-                  d="M32 54s15-16 15-27a15 15 0 1 0-30 0c0 11 15 27 15 27Z"
-                ></path>
-                <circle cx="32" cy="27" r="6"></circle>
-              </svg>
-            </span>
-          </button>
-
-          <button class="hero" type="button" aria-label="ミニゲームを開く">
-            <img
-              class="hero-image"
-              src="./assets/images/tnp-logo.svg"
-              alt="TNP サークルロゴ"
-              draggable="false"
-            />
-          </button>
-
-          <section class="guide-rotator" aria-label="案内メッセージ">
-            <article class="guide-card is-active" aria-hidden="false">
-              <p class="guide-jp">図形をタップ!</p>
-              <p class="guide-en">Tap the shape!</p>
-            </article>
-            <article class="guide-card" aria-hidden="true">
-              <p class="guide-jp">TNPへようこそ!</p>
-              <p class="guide-en">Welcome to TNP!</p>
-            </article>
-            <article class="guide-card guide-card-celebrate" aria-hidden="true">
-              <p class="guide-jp">ご入学<br />おめでとうございます！</p>
-              <p class="guide-en">Congratulations<br />on entering school!</p>
-            </article>
-          </section>
-
-          <button
-            class="shape-button shape-bottom-left"
-            type="button"
-            data-modal="faq"
-            aria-label="よくある質問を見る"
-          >
-            <span class="icon-frame">
-              <svg viewBox="0 0 64 64" aria-hidden="true">
-                <path
-                  d="M24 24c0-5 4-9 9-9 6 0 10 3 10 9 0 4-2 6-6 8-4 2-5 4-5 8"
-                ></path>
-                <circle cx="31" cy="47" r="2.5"></circle>
-              </svg>
-            </span>
-          </button>
-
-          <button
-            class="shape-button shape-bottom-right"
-            type="button"
-            data-modal="entry"
-            aria-label="参加方法を見る"
-          >
-            <span class="icon-frame">
-              <svg viewBox="0 0 64 64" aria-hidden="true">
-                <path d="M18 46 46 18"></path>
-                <path d="M28 18h18v18"></path>
-                <path d="M18 28V18h10"></path>
-                <path d="M46 36v10H36"></path>
-              </svg>
-            </span>
-          </button>
-        </div>
-
-        <div class="modal-layer" aria-live="polite">
-          <section
-            class="info-modal"
-            data-active="false"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="modal-title"
-          >
-            <button class="modal-close" type="button" aria-label="閉じる">
+      <div class="game-layer" aria-live="polite" aria-hidden="true">
+        <section class="game-panel" role="dialog" aria-modal="true" aria-labelledby="game-title">
+          <header class="game-topbar">
+            <button class="game-close" type="button" aria-label="ゲームを閉じる">
               <span></span>
               <span></span>
             </button>
-            <div class="modal-sheen"></div>
-            <div class="modal-copy">
-              <h2 id="modal-title"></h2>
-              <p class="modal-jp"></p>
-              <p class="modal-en"></p>
+            <div class="game-mission">目標:ブロックを全部壊せ！</div>
+            <div class="game-timer">0:00</div>
+          </header>
+
+          <section class="game-screen game-screen-intro is-active" data-screen="intro">
+            <div class="game-intro-body">
+              <p class="game-subtitle">古のミニゲーム</p>
+              <h2 id="game-title">ブロック崩し</h2>
+              <img class="game-intro-ammo"
+                src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAQACAYAAABbK2SfAAAFG2lUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4KPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNS41LjAiPgogPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIgogICAgeG1sbnM6cGhvdG9zaG9wPSJodHRwOi8vbnMuYWRvYmUuY29tL3Bob3Rvc2hvcC8xLjAvIgogICAgeG1sbnM6ZXhpZj0iaHR0cDovL25zLmFkb2JlLmNvbS9leGlmLzEuMC8iCiAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyIKICAgIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIgogICAgeG1sbnM6c3RFdnQ9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZUV2ZW50IyIKICAgeG1wOkNyZWF0ZURhdGU9IjIwMjYtMDQtMDFUMTE6Mjg6NTgrMDkwMCIKICAgeG1wOk1vZGlmeURhdGU9IjIwMjYtMDQtMDFUMTE6MzI6MzcrMDk6MDAiCiAgIHhtcDpNZXRhZGF0YURhdGU9IjIwMjYtMDQtMDFUMTE6MzI6MzcrMDk6MDAiCiAgIHBob3Rvc2hvcDpEYXRlQ3JlYXRlZD0iMjAyNi0wNC0wMVQxMToyODo1OCswOTAwIgogICBwaG90b3Nob3A6Q29sb3JNb2RlPSIzIgogICBwaG90b3Nob3A6SUNDUHJvZmlsZT0ic1JHQiBJRUM2MTk2Ni0yLjEiCiAgIGV4aWY6UGl4ZWxYRGltZW5zaW9uPSIzMDAiCiAgIGV4aWY6UGl4ZWxZRGlt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ATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsyPDz1gP0QLAgw/9qPUAPBAsyfLf1AD0QLMjwH1oP0APBgv79sKr+S+sherD0YB20HgDW8M939/Z/03qIHiw6WLt7+x9W1Q9azwGn+He7e/v/vvUQvVh0sI78YVV9r/UQcIL/VFV/2nqIniw+WLt7+/+jqr5cVf+19Sxw5DdV9c+q6o929/Z/1XqYnuy0HqAXq3HYqaq/VVV/UlXfqap7207EAv1VVf2bqvq3u3v77zSepUuCdYKjeD1WVc9X1X2Nx2H+3qmqv9zd2/9F60EAAAAAAAAAAAAAAAAAAAAAmJP/D2A4V2G2wpoeAAAAAElFTkSuQmCC"
+                alt="30mm弾" draggable="false">
+              <button class="game-start" type="button">START</button>
+              <p class="game-note">終わる場合は左上の×をタップ</p>
+              <p class="game-footnote">所要時間5分程度<br>※音はありません</p>
             </div>
-            <div class="modal-icon"></div>
           </section>
-        </div>
 
-        <div class="game-layer" aria-live="polite" aria-hidden="true">
-          <section
-            class="game-panel"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="game-title"
-          >
-            <header class="game-topbar">
-              <button
-                class="game-close"
-                type="button"
-                aria-label="ゲームを閉じる"
-              >
-                <span></span>
-                <span></span>
+          <section class="game-screen game-screen-play" data-screen="play">
+            <div class="game-playfield">
+              <canvas class="game-canvas" width="336" height="344" aria-label="ブロック崩しゲーム画面"></canvas>
+            </div>
+
+            <div class="game-controls" aria-label="ゲーム操作ボタン">
+              <button class="control-button control-left" type="button" aria-label="左へ移動">
+                <span class="control-triangle left"></span>
+                <span class="control-label">LEFT</span>
               </button>
-              <div class="game-mission">目標:ブロックを全部壊せ！</div>
-              <div class="game-timer">0:00</div>
-            </header>
+              <button class="control-button control-fire" type="button" aria-label="発射">
+                <span class="control-square"></span>
+                <span class="control-label">FIRE</span>
+              </button>
+              <button class="control-button control-right" type="button" aria-label="右へ移動">
+                <span class="control-triangle right"></span>
+                <span class="control-label">RIGHT</span>
+              </button>
+            </div>
 
-            <section
-              class="game-screen game-screen-intro is-active"
-              data-screen="intro"
-            >
-              <div class="game-intro-body">
-                <p class="game-subtitle">古のミニゲーム</p>
-                <h2 id="game-title">ブロック崩し</h2>
-                <img
-                  class="game-intro-ammo"
-                  src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAQACAYAAABbK2SfAAAFG2lUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4KPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNS41LjAiPgogPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIgogICAgeG1sbnM6cGhvdG9zaG9wPSJodHRwOi8vbnMuYWRvYmUuY29tL3Bob3Rvc2hvcC8xLjAvIgogICAgeG1sbnM6ZXhpZj0iaHR0cDovL25zLmFkb2JlLmNvbS9leGlmLzEuMC8iCiAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyIKICAgIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIgogICAgeG1sbnM6c3RFdnQ9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZUV2ZW50IyIKICAgeG1wOkNyZWF0ZURhdGU9IjIwMjYtMDQtMDFUMTE6Mjg6NTgrMDkwMCIKICAgeG1wOk1vZGlmeURhdGU9IjIwMjYtMDQtMDFUMTE6MzI6MzcrMDk6MDAiCiAgIHhtcDpNZXRhZGF0YURhdGU9IjIwMjYtMDQtMDFUMTE6MzI6MzcrMDk6MDAiCiAgIHBob3Rvc2hvcDpEYXRlQ3JlYXRlZD0iMjAyNi0wNC0wMVQxMToyODo1OCswOTAwIgogICBwaG90b3Nob3A6Q29sb3JNb2RlPSIzIgogICBwaG90b3Nob3A6SUNDUHJvZmlsZT0ic1JHQiBJRUM2MTk2Ni0yLjEiCiAgIGV4aWY6UGl4ZWxYRGltZW5zaW9uPSIzMDAiCiAgIGV4aWY6UGl4ZWxZRGlt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ATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsyPDz1gP0QLAgw/9qPUAPBAsyfLf1AD0QLMjwH1oP0APBgv79sKr+S+sherD0YB20HgDW8M939/Z/03qIHiw6WLt7+x9W1Q9azwGn+He7e/v/vvUQvVh0sI78YVV9r/UQcIL/VFV/2nqIniw+WLt7+/+jqr5cVf+19Sxw5DdV9c+q6o929/Z/1XqYnuy0HqAXq3HYqaq/VVV/UlXfqap7207EAv1VVf2bqvq3u3v77zSepUuCdYKjeD1WVc9X1X2Nx2H+3qmqv9zd2/9F60EAAAAAAAAAAAAAAAAAAAAAmJP/D2A4V2G2wpoeAAAAAElFTkSuQmCC"
-                  alt="30mm弾"
-                  draggable="false"
-                />
-                <button class="game-start" type="button">START</button>
-                <p class="game-note">終わる場合は左上の×をタップ</p>
-                <p class="game-footnote">
-                  所要時間5分程度<br />※音はありません
-                </p>
+            <div class="game-legend">
+              <p class="legend-title">ブロックの種類</p>
+              <div class="legend-row"><span class="legend-swatch legend-normal"></span><span>ふつうのブロック</span></div>
+              <div class="legend-row"><span class="legend-swatch legend-hard"></span><span>かたいブロック</span></div>
+              <div class="legend-row"><span class="legend-swatch legend-special"></span><span>30mm弾がゲットできるブロック</span>
               </div>
-            </section>
-
-            <section class="game-screen game-screen-play" data-screen="play">
-              <div class="game-playfield">
-                <canvas
-                  class="game-canvas"
-                  width="336"
-                  height="344"
-                  aria-label="ブロック崩しゲーム画面"
-                ></canvas>
-              </div>
-
-              <div class="game-controls" aria-label="ゲーム操作ボタン">
-                <button
-                  class="control-button control-left"
-                  type="button"
-                  aria-label="左へ移動"
-                >
-                  <span class="control-triangle left"></span>
-                  <span class="control-label">LEFT</span>
-                </button>
-                <button
-                  class="control-button control-fire"
-                  type="button"
-                  aria-label="発射"
-                >
-                  <span class="control-square"></span>
-                  <span class="control-label">FIRE</span>
-                </button>
-                <button
-                  class="control-button control-right"
-                  type="button"
-                  aria-label="右へ移動"
-                >
-                  <span class="control-triangle right"></span>
-                  <span class="control-label">RIGHT</span>
-                </button>
-              </div>
-
-              <div class="game-legend">
-                <p class="legend-title">ブロックの種類</p>
-                <div class="legend-row">
-                  <span class="legend-swatch legend-normal"></span
-                  ><span>ふつうのブロック</span>
-                </div>
-                <div class="legend-row">
-                  <span class="legend-swatch legend-hard"></span
-                  ><span>かたいブロック</span>
-                </div>
-                <div class="legend-row">
-                  <span class="legend-swatch legend-special"></span
-                  ><span>30mm弾がゲットできるブロック</span>
-                </div>
-                <p class="legend-secret">※ダブルタップで30mm砲弾発射!</p>
-              </div>
-            </section>
-
-            <section
-              class="game-screen game-screen-result"
-              data-screen="result"
-            >
-              <div class="game-result-body">
-                <h2>CLEAR!</h2>
-                <p class="result-label">TIME</p>
-                <p class="result-time">0:00</p>
-                <div class="ranking-form">
-                  <input class="ranking-name-input" type="text" placeholder="名前" maxlength="12" />
-                  <button class="ranking-submit" type="button">登録</button>
-                </div>
-                <div class="ranking-board">
-                  <h3>RANKING TOP 10</h3>
-                  <p class="ranking-message">読み込み中...</p>
-                  <ol class="ranking-list"></ol>
-                </div>
-                <button class="game-replay" type="button">REPLAY</button>
-                <p class="game-note">終わる場合は左上の×をタップ</p>
-              </div>
-            </section>
+              <p class="legend-secret">※ダブルタップで30mm砲弾発射!</p>
+            </div>
           </section>
-        </div>
-      </main>
-    </div>
 
-    <script>
-      const SUPABASE_URL = "https://qsbqawjpkwxawsaluuga.supabase.co";
-      const SUPABASE_KEY = "sb_publishable_-MgBtWaAp2RuziOkI2xf2Q_JKlNLBPi";
-      let db = null;
-      const getDb = () => {
-        if (db) return db;
-        try {
-          if (window.supabase && window.supabase.createClient) {
-            db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-          }
-        } catch (e) {
-          console.warn("Supabase初期化失敗:", e);
-        }
-        return db;
-      };
+          <section class="game-screen game-screen-result" data-screen="result">
+            <div class="game-result-body">
+              <h2>CLEAR!</h2>
+              <p class="result-label">TIME</p>
+              <p class="result-time">0:00</p>
+              <button class="game-replay" type="button">REPLAY</button>
+              <p class="game-note">終わる場合は左上の×をタップ</p>
+            </div>
+          </section>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script type="module" src="src/main_2.js"></script>
+</body>
 
-      const modalData = {
-        time: {
-          title: "活動時間",
-          jp: "毎週 水・金 16:30~18:30\nサークル棟 2Fにて活動",
-          en: "Every Wednesday and Friday from 4:30 PM to 6:30 PM.\nActivities are held on the 2nd floor of the club building.",
-          icon: `
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        <circle cx="32" cy="32" r="22"></circle>
-        <path d="M32 18v15"></path>
-        <path d="M32 32l-10 8"></path>
-        <path d="M32 10v4"></path>
-        <path d="M54 32h-4"></path>
-        <path d="M32 54v-4"></path>
-        <path d="M10 32h4"></path>
-      </svg>
-    `,
-        },
-        place: {
-          title: "活動場所",
-          jp: "サークル棟 2F\nものづくりスペース",
-          en: "We meet on the 2nd floor of the club building.\nLook for the maker space sign near the stairs.",
-          icon: `
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        <path d="M32 54s15-16 15-27a15 15 0 1 0-30 0c0 11 15 27 15 27Z"></path>
-        <circle cx="32" cy="27" r="6"></circle>
-      </svg>
-    `,
-        },
-        faq: {
-          title: "初心者歓迎",
-          jp: "知識ゼロでも大丈夫!\n新入生も先輩がやさしくサポート",
-          en: "No experience needed.\nOur members will help you get started at your own pace.",
-          icon: `
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        <path d="M24 24c0-5 4-9 9-9 6 0 10 3 10 9 0 4-2 6-6 8-4 2-5 4-5 8"></path>
-        <circle cx="31" cy="47" r="2.5"></circle>
-      </svg>
-    `,
-        },
-        entry: {
-          title: "参加方法",
-          jp: "気になったら自由に見学OK!\nSNSや新歓ブースでも受付中",
-          en: "Feel free to visit us first.\nYou can also contact us through social media or at our welcome booth.",
-          icon: `
-      <svg viewBox="0 0 64 64" aria-hidden="true">
-        <path d="M18 46 46 18"></path>
-        <path d="M28 18h18v18"></path>
-        <path d="M18 28V18h10"></path>
-        <path d="M46 36v10H36"></path>
-      </svg>
-    `,
-        },
-      };
-
-      const loadingScreen = document.querySelector(".loading-screen");
-      const homeScreen = document.querySelector(".home-screen");
-      const contentLayer = document.querySelector(".content-layer");
-      const modalLayer = document.querySelector(".modal-layer");
-      const infoModal = document.querySelector(".info-modal");
-      const modalTitle = document.querySelector("#modal-title");
-      const modalJp = document.querySelector(".modal-jp");
-      const modalEn = document.querySelector(".modal-en");
-      const modalIcon = document.querySelector(".modal-icon");
-      const closeButton = document.querySelector(".modal-close");
-      const shapeButtons = document.querySelectorAll(".shape-button");
-      const guideCards = document.querySelectorAll(".guide-card");
-      const heroButton = document.querySelector(".hero");
-      const gameLayer = document.querySelector(".game-layer");
-      const gameCloseButton = document.querySelector(".game-close");
-      const gameStartButton = document.querySelector(".game-start");
-      const gameReplayButton = document.querySelector(".game-replay");
-      const gameTimer = document.querySelector(".game-timer");
-      const resultTime = document.querySelector(".result-time");
-      const gameScreens = document.querySelectorAll(".game-screen");
-      const rankingNameInput = document.querySelector(".ranking-name-input");
-      const rankingSubmit = document.querySelector(".ranking-submit");
-      const rankingList = document.querySelector(".ranking-list");
-      const rankingMessage = document.querySelector(".ranking-message");
-      const leftButton = document.querySelector(".control-left");
-      const rightButton = document.querySelector(".control-right");
-      const fireButton = document.querySelector(".control-fire");
-      const canvas = document.querySelector(".game-canvas");
-      const ctx = canvas.getContext("2d");
-
-      let guideIndex = 0;
-
-      const game = {
-        width: canvas.width,
-        height: canvas.height,
-        paddle: { width: 74, height: 22, x: 0, y: 0, speed: 290 },
-        ball: {
-          x: 0,
-          y: 0,
-          vx: 0,
-          vy: 0,
-          radius: 7,
-          launched: false,
-          speed: 198,
-        },
-        bullets: [],
-        blocks: [],
-        ammoInventory: 0,
-        running: false,
-        timerMs: 0,
-        timerStartedAt: 0,
-        moveLeft: false,
-        moveRight: false,
-        rafId: 0,
-        lastFrame: 0,
-        ammoImage: new Image(),
-        ammoImageReady: false,
-        screen: "intro",
-        fireTapTimeout: 0,
-        infiniteAmmo: false,
-        inventoryTapCount: 0,
-        inventoryTapTimer: 0,
-      };
-
-      game.ammoImage.addEventListener("load", () => {
-        game.ammoImageReady = true;
-        if (game.screen === "play") {
-          drawGame();
-        }
-      });
-      game.ammoImage.src =
-        "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAASwAAAQACAYAAABbK2SfAAAFG2lUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4KPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNS41LjAiPgogPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIgogICAgeG1sbnM6cGhvdG9zaG9wPSJodHRwOi8vbnMuYWRvYmUuY29tL3Bob3Rvc2hvcC8xLjAvIgogICAgeG1sbnM6ZXhpZj0iaHR0cDovL25zLmFkb2JlLmNvbS9leGlmLzEuMC8iCiAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyIKICAgIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIgogICAgeG1sbnM6c3RFdnQ9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZUV2ZW50IyIKICAgeG1wOkNyZWF0ZURhdGU9IjIwMjYtMDQtMDFUMTE6Mjg6NTgrMDkwMCIKICAgeG1wOk1vZGlmeURhdGU9IjIwMjYtMDQtMDFUMTE6MzI6MzcrMDk6MDAiCiAgIHhtcDpNZXRhZGF0YURhdGU9IjIwMjYtMDQtMDFUMTE6MzI6MzcrMDk6MDAiCiAgIHBob3Rvc2hvcDpEYXRlQ3JlYXRlZD0iMjAyNi0wNC0wMVQxMToyODo1OCswOTAwIgogICBwaG90b3Nob3A6Q29sb3JNb2RlPSIzIgogICBwaG90b3Nob3A6SUNDUHJvZmlsZT0ic1JHQiBJRUM2MTk2Ni0yLjEiCiAgIGV4aWY6UGl4ZWxYRGltZW5zaW9uPSIzMDAiCiAgIGV4aWY6UGl4ZWxZRGlt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ATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsIIZgATEEC4ghWEAMwQJiCBYQQ7CAGIIFxBAsyPDz1gP0QLAgw/9qPUAPBAsyfLf1AD0QLMjwH1oP0APBgv79sKr+S+sherD0YB20HgDW8M939/Z/03qIHiw6WLt7+x9W1Q9azwGn+He7e/v/vvUQvVh0sI78YVV9r/UQcIL/VFV/2nqIniw+WLt7+/+jqr5cVf+19Sxw5DdV9c+q6o929/Z/1XqYnuy0HqAXq3HYqaq/VVV/UlXfqap7207EAv1VVf2bqvq3u3v77zSepUuCdYKjeD1WVc9X1X2Nx2H+3qmqv9zd2/9F60EAAAAAAAAAAAAAAAAAAAAAmJP/D2A4V2G2wpoeAAAAAElFTkSuQmCC";
-
-      const formatTime = (ms) => {
-        const totalSeconds = Math.max(0, Math.floor(ms / 1000));
-        const minutes = Math.floor(totalSeconds / 60);
-        const seconds = totalSeconds % 60;
-        return `${minutes}:${String(seconds).padStart(2, "0")}`;
-      };
-
-      const setPageLocked = (locked) => {
-        document.body.style.overflow = locked ? "hidden" : "";
-      };
-
-      const showHome = () => {
-        loadingScreen.classList.add("is-hidden");
-        loadingScreen.setAttribute("aria-hidden", "true");
-        homeScreen.classList.add("is-visible");
-      };
-
-      const openModal = (key) => {
-        const data = modalData[key];
-        if (!data) return;
-
-        modalTitle.textContent = data.title;
-        modalJp.textContent = data.jp;
-        modalEn.textContent = data.en;
-        modalIcon.innerHTML = data.icon;
-
-        modalLayer.classList.add("is-open");
-        infoModal.dataset.active = "true";
-        contentLayer.classList.add("is-blurred");
-        setPageLocked(true);
-      };
-
-      const closeModal = () => {
-        modalLayer.classList.remove("is-open");
-        infoModal.dataset.active = "false";
-        contentLayer.classList.remove("is-blurred");
-        if (!gameLayer.classList.contains("is-open")) {
-          setPageLocked(false);
-        }
-      };
-
-      const rotateGuide = () => {
-        if (guideCards.length < 2) return;
-
-        guideCards[guideIndex].classList.remove("is-active");
-        guideCards[guideIndex].setAttribute("aria-hidden", "true");
-        guideIndex = (guideIndex + 1) % guideCards.length;
-        guideCards[guideIndex].classList.add("is-active");
-        guideCards[guideIndex].setAttribute("aria-hidden", "false");
-      };
-
-      const showGameScreen = (screenName) => {
-        game.screen = screenName;
-        gameScreens.forEach((screen) => {
-          const active = screen.dataset.screen === screenName;
-          screen.classList.toggle("is-active", active);
-        });
-      };
-
-      const updateTimerDisplay = () => {
-        gameTimer.textContent = formatTime(game.timerMs);
-      };
-
-      const makeBlock = (x, y, width, height, type) => {
-        const hitPoints = type === "hard" ? 2 : 1;
-        return { x, y, width, height, type, hitPoints };
-      };
-
-      const buildBlocks = () => {
-        const blocks = [];
-        const blockWidth = 46;
-        const blockHeight = 18;
-        const gap = 2;
-        const leftStart = 0;
-        const columnStep = blockWidth + gap;
-        const top = 28;
-
-        for (let row = 0; row < 6; row += 1) {
-          for (let col = 0; col < 3; col += 1) {
-            let type = "normal";
-            if (row === 2 && col === 2) type = "special";
-            blocks.push(
-              makeBlock(
-                leftStart + col * columnStep,
-                top + row * (blockHeight + gap),
-                blockWidth,
-                blockHeight,
-                type,
-              ),
-            );
-          }
-
-          for (let col = 0; col < 3; col += 1) {
-            let type = "normal";
-            if (row === 2 && col === 0) type = "special";
-            blocks.push(
-              makeBlock(
-                leftStart + (col + 4) * columnStep,
-                top + row * (blockHeight + gap),
-                blockWidth,
-                blockHeight,
-                type,
-              ),
-            );
-          }
-        }
-
-        for (let row = 0; row < 3; row += 1) {
-          blocks.push(
-            makeBlock(
-              leftStart + 3 * columnStep,
-              136 + row * (blockHeight + gap),
-              blockWidth,
-              blockHeight,
-              "hard",
-            ),
-          );
-        }
-
-        for (let col = 0; col < 7; col += 1) {
-          blocks.push(
-            makeBlock(
-              col * (46 + gap),
-              210,
-              46,
-              18,
-              col >= 2 && col <= 4 ? "hard" : "normal",
-            ),
-          );
-        }
-
-        return blocks;
-      };
-
-      const resetBall = () => {
-        game.ball.launched = false;
-        game.ball.vx = 0;
-        game.ball.vy = -game.ball.speed;
-        game.ball.x = game.paddle.x + game.paddle.width / 2;
-        game.ball.y = game.paddle.y - game.ball.radius;
-      };
-
-      const resetGame = () => {
-        game.paddle.x = (game.width - game.paddle.width) / 2;
-        game.paddle.y = game.height - 66;
-        game.blocks = buildBlocks();
-        game.bullets = [];
-        game.ammoInventory = 0;
-        game.infiniteAmmo = false;
-        game.inventoryTapCount = 0;
-        if (game.inventoryTapTimer) {
-          window.clearTimeout(game.inventoryTapTimer);
-          game.inventoryTapTimer = 0;
-        }
-        game.timerMs = 0;
-        game.timerStartedAt = performance.now();
-        game.lastFrame = 0;
-        accumulator = 0;
-        game.moveLeft = false;
-        game.moveRight = false;
-        if (game.fireTapTimeout) {
-          window.clearTimeout(game.fireTapTimeout);
-          game.fireTapTimeout = 0;
-        }
-        resultTime.textContent = "0:00";
-        updateTimerDisplay();
-        resetBall();
-        drawGame();
-      };
-
-      const openGame = () => {
-        closeModal();
-        gameLayer.classList.add("is-open");
-        gameLayer.setAttribute("aria-hidden", "false");
-        contentLayer.classList.add("is-blurred");
-        setPageLocked(true);
-        showGameScreen("intro");
-        resetGame();
-        stopGameLoop();
-      };
-
-      const closeGame = () => {
-        stopGameLoop();
-        gameLayer.classList.remove("is-open");
-        gameLayer.setAttribute("aria-hidden", "true");
-        contentLayer.classList.remove("is-blurred");
-        setPageLocked(false);
-        showGameScreen("intro");
-        resetGame();
-      };
-
-      const startGame = () => {
-        stopGameLoop();
-        resetGame();
-        showGameScreen("play");
-        game.running = true;
-        game.timerStartedAt = performance.now();
-        game.lastFrame = 0;
-        accumulator = 0;
-        game.rafId = requestAnimationFrame(gameLoop);
-      };
-
-      const fetchRankings = async () => {
-        const client = getDb();
-        if (!client) {
-          rankingMessage.textContent = "接続できませんでした";
-          rankingList.innerHTML = "";
-          return;
-        }
-        try {
-          const { data, error } = await client
-            .from("rankings")
-            .select("name, time_ms")
-            .order("time_ms", { ascending: true })
-            .limit(10);
-          if (error) throw error;
-          if (!data || data.length === 0) {
-            rankingMessage.textContent = "まだ記録がありません";
-            rankingList.innerHTML = "";
-            return;
-          }
-          rankingMessage.textContent = "";
-          rankingList.innerHTML = data
-            .map(
-              (r, i) =>
-                `<li><span class="ranking-rank">${i + 1}.</span><span class="ranking-player-name">${escapeHtml(r.name)}</span><span class="ranking-player-time">${formatTime(r.time_ms)}</span></li>`,
-            )
-            .join("");
-        } catch (e) {
-          console.warn("ランキング取得失敗:", e);
-          rankingMessage.textContent = "接続できませんでした";
-          rankingList.innerHTML = "";
-        }
-      };
-
-      const submitScore = async (name, timeMs) => {
-        const client = getDb();
-        if (!client) {
-          rankingMessage.textContent = "接続できませんでした";
-          return;
-        }
-        try {
-          const { error } = await client
-            .from("rankings")
-            .insert({ name, time_ms: timeMs });
-          if (error) throw error;
-          await fetchRankings();
-        } catch (e) {
-          console.warn("スコア送信失敗:", e);
-          rankingMessage.textContent = "送信できませんでした";
-        }
-      };
-
-      const escapeHtml = (str) =>
-        str.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-
-      const finishGame = () => {
-        game.running = false;
-        stopGameLoop();
-        resultTime.textContent = formatTime(game.timerMs);
-        rankingSubmit.disabled = false;
-        rankingNameInput.value = "";
-        rankingMessage.textContent = "読み込み中...";
-        rankingList.innerHTML = "";
-        showGameScreen("result");
-        fetchRankings();
-      };
-
-      rankingSubmit.addEventListener("click", () => {
-        const name = rankingNameInput.value.trim();
-        if (!name) {
-          rankingNameInput.focus();
-          return;
-        }
-        rankingSubmit.disabled = true;
-        submitScore(name, Math.round(game.timerMs));
-      });
-
-      function stopGameLoop() {
-        game.running = false;
-        if (game.rafId) {
-          cancelAnimationFrame(game.rafId);
-          game.rafId = 0;
-        }
-      }
-
-      const launchBall = () => {
-        if (game.ball.launched) return;
-        game.ball.launched = true;
-        game.ball.vx = (Math.random() > 0.5 ? 1 : -1) * 108;
-        game.ball.vy = -game.ball.speed;
-      };
-
-      const fireAmmo = () => {
-        if (!game.infiniteAmmo && game.ammoInventory <= 0) return;
-
-        if (!game.infiniteAmmo) {
-          game.ammoInventory -= 1;
-        }
-        game.bullets.push({
-          x: game.paddle.x + game.paddle.width / 2 - 7,
-          y: game.paddle.y - 36,
-          width: 14,
-          height: 44,
-          speed: 420,
-        });
-      };
-
-      const handleFireTap = () => {
-        if (!game.ball.launched) {
-          launchBall();
-        }
-      };
-
-      const handleFireButtonPress = () => {
-        if (game.fireTapTimeout) {
-          window.clearTimeout(game.fireTapTimeout);
-          game.fireTapTimeout = 0;
-          fireAmmo();
-          return;
-        }
-
-        game.fireTapTimeout = window.setTimeout(() => {
-          game.fireTapTimeout = 0;
-          handleFireTap();
-        }, 240);
-      };
-
-      const hitBlock = (block, powerShot = false) => {
-        if (block.type === "special") {
-          game.ammoInventory += 1;
-        }
-
-        if (powerShot || block.type !== "hard") {
-          block.hitPoints = 0;
-        } else {
-          block.hitPoints -= 1;
-        }
-
-        if (block.hitPoints <= 0) {
-          game.blocks = game.blocks.filter((item) => item !== block);
-        }
-
-        if (game.blocks.length === 0) {
-          finishGame();
-        }
-      };
-
-      const updatePaddle = (dt) => {
-        if (game.moveLeft) {
-          game.paddle.x -= game.paddle.speed * dt;
-        }
-        if (game.moveRight) {
-          game.paddle.x += game.paddle.speed * dt;
-        }
-        game.paddle.x = Math.max(
-          0,
-          Math.min(game.width - game.paddle.width, game.paddle.x),
-        );
-
-        if (!game.ball.launched) {
-          game.ball.x = game.paddle.x + game.paddle.width / 2;
-          game.ball.y = game.paddle.y - game.ball.radius;
-        }
-      };
-
-      const updateBall = (dt) => {
-        if (!game.ball.launched) return;
-
-        const ball = game.ball;
-        ball.x += ball.vx * dt;
-        ball.y += ball.vy * dt;
-
-        if (ball.x - ball.radius <= 0) {
-          ball.x = ball.radius;
-          ball.vx *= -1;
-        }
-        if (ball.x + ball.radius >= game.width) {
-          ball.x = game.width - ball.radius;
-          ball.vx *= -1;
-        }
-        if (ball.y - ball.radius <= 0) {
-          ball.y = ball.radius;
-          ball.vy *= -1;
-        }
-
-        if (ball.y - ball.radius > game.height) {
-          resetBall();
-          return;
-        }
-
-        const paddleTop = game.paddle.y;
-        if (
-          ball.y + ball.radius >= paddleTop &&
-          ball.y - ball.radius <= paddleTop + game.paddle.height &&
-          ball.x >= game.paddle.x &&
-          ball.x <= game.paddle.x + game.paddle.width &&
-          ball.vy > 0
-        ) {
-          const hitPoint =
-            (ball.x - (game.paddle.x + game.paddle.width / 2)) /
-            (game.paddle.width / 2);
-          ball.vx = hitPoint * 190;
-          ball.vy = -Math.max(170, game.ball.speed - Math.abs(hitPoint) * 20);
-          ball.y = paddleTop - ball.radius - 1;
-        }
-
-        for (const block of [...game.blocks]) {
-          const intersects =
-            ball.x + ball.radius >= block.x &&
-            ball.x - ball.radius <= block.x + block.width &&
-            ball.y + ball.radius >= block.y &&
-            ball.y - ball.radius <= block.y + block.height;
-
-          if (!intersects) continue;
-
-          const overlapLeft = ball.x + ball.radius - block.x;
-          const overlapRight = block.x + block.width - (ball.x - ball.radius);
-          const overlapTop = ball.y + ball.radius - block.y;
-          const overlapBottom = block.y + block.height - (ball.y - ball.radius);
-          const minOverlap = Math.min(
-            overlapLeft,
-            overlapRight,
-            overlapTop,
-            overlapBottom,
-          );
-
-          hitBlock(block, false);
-
-          if (minOverlap === overlapLeft || minOverlap === overlapRight) {
-            ball.vx *= -1;
-          } else {
-            ball.vy *= -1;
-          }
-          break;
-        }
-      };
-
-      const updateBullets = (dt) => {
-        game.bullets.forEach((bullet) => {
-          bullet.y -= bullet.speed * dt;
-        });
-
-        game.bullets = game.bullets.filter(
-          (bullet) => bullet.y + bullet.height > 0,
-        );
-
-        game.bullets.forEach((bullet) => {
-          for (const block of [...game.blocks]) {
-            const hit =
-              bullet.x < block.x + block.width &&
-              bullet.x + bullet.width > block.x &&
-              bullet.y < block.y + block.height &&
-              bullet.y + bullet.height > block.y;
-
-            if (hit) {
-              hitBlock(block, true);
-            }
-          }
-        });
-      };
-
-      const drawBlocks = () => {
-        game.blocks.forEach((block) => {
-          let color = "#bfd3bd";
-          if (block.type === "hard")
-            color = block.hitPoints === 2 ? "#7da6b5" : "#99bcc8";
-          if (block.type === "special") color = "#8f78a9";
-          ctx.fillStyle = color;
-          ctx.fillRect(block.x, block.y, block.width, block.height);
-        });
-      };
-
-      const drawBullets = () => {
-        game.bullets.forEach((bullet) => {
-          if (game.ammoImageReady) {
-            ctx.drawImage(
-              game.ammoImage,
-              bullet.x,
-              bullet.y,
-              bullet.width,
-              bullet.height,
-            );
-          } else {
-            ctx.fillStyle = "#c69646";
-            ctx.fillRect(bullet.x, bullet.y, bullet.width, bullet.height);
-          }
-        });
-      };
-
-      const drawInventory = () => {
-        const iconX = game.width - 30;
-        const iconY = game.height - 92;
-        if (game.ammoImageReady) {
-          ctx.drawImage(game.ammoImage, iconX, iconY, 18, 64);
-        } else {
-          ctx.fillStyle = "#c69646";
-          ctx.fillRect(iconX, iconY, 14, 54);
-        }
-        ctx.fillStyle = "#b4dd44";
-        ctx.font = "900 18px Zen Kaku Gothic New, sans-serif";
-        ctx.textAlign = "right";
-        ctx.fillText(
-          game.infiniteAmmo ? "INF" : `x${game.ammoInventory}`,
-          game.width - 6,
-          game.height - 10,
-        );
-      };
-
-      const drawGame = () => {
-        ctx.clearRect(0, 0, game.width, game.height);
-
-        ctx.fillStyle = "#faf7dc";
-        ctx.fillRect(0, 0, game.width, game.height);
-
-        drawBlocks();
-
-        ctx.fillStyle = "#ff9b00";
-        ctx.fillRect(
-          game.paddle.x,
-          game.paddle.y,
-          game.paddle.width,
-          game.paddle.height,
-        );
-
-        ctx.fillStyle = "#fffdf8";
-        ctx.strokeStyle = "#bcdd43";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(game.ball.x, game.ball.y, game.ball.radius, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
-
-        drawBullets();
-        drawInventory();
-      };
-
-      const FIXED_DT = 1 / 120;
-      let accumulator = 0;
-
-      function gameLoop(timestamp) {
-        if (!game.running) return;
-
-        if (!game.lastFrame) {
-          game.lastFrame = timestamp;
-        }
-
-        const elapsed = Math.min((timestamp - game.lastFrame) / 1000, 0.1);
-        game.lastFrame = timestamp;
-        game.timerMs = timestamp - game.timerStartedAt;
-        updateTimerDisplay();
-
-        accumulator += elapsed;
-        while (accumulator >= FIXED_DT) {
-          updatePaddle(FIXED_DT);
-          updateBall(FIXED_DT);
-          updateBullets(FIXED_DT);
-          accumulator -= FIXED_DT;
-        }
-        drawGame();
-
-        if (game.running) {
-          game.rafId = requestAnimationFrame(gameLoop);
-        }
-      }
-
-      const setMove = (direction, active) => {
-        if (direction === "left") game.moveLeft = active;
-        if (direction === "right") game.moveRight = active;
-      };
-
-      const handleInventorySecretTap = () => {
-        game.inventoryTapCount += 1;
-        if (game.inventoryTapTimer) {
-          window.clearTimeout(game.inventoryTapTimer);
-        }
-
-        if (game.inventoryTapCount >= 5) {
-          game.infiniteAmmo = true;
-          game.inventoryTapCount = 0;
-          game.inventoryTapTimer = 0;
-          drawGame();
-          return;
-        }
-
-        game.inventoryTapTimer = window.setTimeout(() => {
-          game.inventoryTapCount = 0;
-          game.inventoryTapTimer = 0;
-        }, 1200);
-      };
-
-      const bindHoldButton = (button, direction) => {
-        const start = (event) => {
-          event.preventDefault();
-          setMove(direction, true);
-        };
-
-        const stop = () => setMove(direction, false);
-
-        button.addEventListener("pointerdown", start);
-        button.addEventListener("pointerup", stop);
-        button.addEventListener("pointerleave", stop);
-        button.addEventListener("pointercancel", stop);
-        window.addEventListener("pointerup", stop);
-      };
-
-      window.addEventListener("load", () => {
-        window.setTimeout(showHome, 1500);
-        window.setInterval(rotateGuide, 2500);
-        resetGame();
-      });
-
-      shapeButtons.forEach((button) => {
-        button.addEventListener("click", () => {
-          openModal(button.dataset.modal);
-        });
-      });
-
-      heroButton.addEventListener("click", openGame);
-      closeButton.addEventListener("click", closeModal);
-      gameCloseButton.addEventListener("click", closeGame);
-      gameStartButton.addEventListener("click", startGame);
-      gameReplayButton.addEventListener("click", startGame);
-      fireButton.addEventListener("click", handleFireButtonPress);
-
-      modalLayer.addEventListener("click", (event) => {
-        if (event.target === modalLayer) {
-          closeModal();
-        }
-      });
-
-      bindHoldButton(leftButton, "left");
-      bindHoldButton(rightButton, "right");
-
-      canvas.addEventListener("click", (event) => {
-        if (game.screen !== "play") return;
-
-        const rect = canvas.getBoundingClientRect();
-        const scaleX = game.width / rect.width;
-        const scaleY = game.height / rect.height;
-        const x = (event.clientX - rect.left) * scaleX;
-        const y = (event.clientY - rect.top) * scaleY;
-
-        if (
-          x >= game.width - 42 &&
-          x <= game.width &&
-          y >= game.height - 102 &&
-          y <= game.height
-        ) {
-          handleInventorySecretTap();
-        }
-      });
-
-      window.addEventListener("keydown", (event) => {
-        if (event.key === "Escape") {
-          if (gameLayer.classList.contains("is-open")) {
-            closeGame();
-            return;
-          }
-          if (modalLayer.classList.contains("is-open")) {
-            closeModal();
-          }
-        }
-
-        if (game.screen !== "play") return;
-
-        if (event.key === "ArrowLeft") {
-          event.preventDefault();
-          setMove("left", true);
-        }
-        if (event.key === "ArrowRight") {
-          event.preventDefault();
-          setMove("right", true);
-        }
-        if (event.key === " " || event.key === "Enter") {
-          event.preventDefault();
-          handleFireTap();
-        }
-      });
-
-      window.addEventListener("keyup", (event) => {
-        if (event.key === "ArrowLeft") setMove("left", false);
-        if (event.key === "ArrowRight") setMove("right", false);
-      });
-    </script>
-  </body>
 </html>
