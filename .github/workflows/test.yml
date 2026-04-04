@@ -1,0 +1,27 @@
+name: Test Build
+on:
+  push:
+    branches:
+      - deploy
+      - master
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    concurrency:
+      group: ${{ github.workflow }}-${{ github.ref }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v2
+        with:
+          node-version: '25'
+
+      - name: Yarn Install
+        run: yarn install --frozen-lockfile
+      - name: Build
+        run: yarn build
+        env: 
+          CI: false
