@@ -17,8 +17,8 @@ const getDb = () => {
 const modalData = {
   time: {
     title: "活動時間",
-    jp: "毎週 水・金 16:30~18:30\nサークル棟 2Fにて活動",
-    en: "Every Wednesday and Friday from 4:30 PM to 6:30 PM.\nActivities are held on the 2nd floor of the club building.",
+    jp: "毎週 水・金 16:30~18:30\n土日祝日は基本無し\n長期休暇中も活動は基本ありません",
+    en: "Every Wednesday and Friday from 4:30 PM to 6:30 PM. Generally no activities on Saturdays, Sundays, \nor public holidays. Activities are also generally suspended\n during long holidays.",
     icon: `
       <svg viewBox="0 0 64 64" aria-hidden="true">
         <circle cx="32" cy="32" r="22"></circle>
@@ -33,8 +33,11 @@ const modalData = {
   },
   place: {
     title: "活動場所",
-    jp: "サークル棟 2F\n右側",
-    en: "We meet on the 2nd floor of the club building.\nLook for the space to the right of the stairs.",
+    jp: "手形キャンパス内の\nサークル棟2F\n右側",
+    en: "Club building on the Tegata campus, \n2nd floor, right side",
+    
+    mapLink: "https://www.google.com/maps/place/%E3%80%92010-0852+%E7%A7%8B%E7%94%B0%E7%9C%8C%E7%A7%8B%E7%94%B0%E5%B8%82%E6%89%8B%E5%BD%A2%E5%AD%A6%E5%9C%92%E7%94%BA%EF%BC%91+%E3%82%B5%E3%83%BC%E3%82%AF%E3%83%AB%E6%A3%9F/",
+    
     icon: `
       <svg viewBox="0 0 64 64" aria-hidden="true">
         <path d="M32 54s15-16 15-27a15 15 0 1 0-30 0c0 11 15 27 15 27Z"></path>
@@ -43,9 +46,9 @@ const modalData = {
     `,
   },
   faq: {
-    title: "初心者歓迎",
-    jp: "知識ゼロでも大丈夫!\n新入生も先輩がやさしくサポート",
-    en: "No experience needed.\nOur members will help you get started at your own pace.",
+    title: "活動内容",
+    jp: "ゲーム制作を中心\nとしたプログラミングによる創作活動\n\nコミックマーケット夏・冬に作品を出品",
+    en: "Creative activities centered on game development and programming.\nExhibiting works at Comic Market Summer and Winter.",
     icon: `
       <svg viewBox="0 0 64 64" aria-hidden="true">
         <path d="M24 24c0-5 4-9 9-9 6 0 10 3 10 9 0 4-2 6-6 8-4 2-5 4-5 8"></path>
@@ -54,9 +57,21 @@ const modalData = {
     `,
   },
   entry: {
-    title: "参加方法",
-    jp: "気になったら自由に見学OK!\nSNSや新歓ブースでも受付中",
+    title: "その他",
+    jp: "気になったら\n自由に見学OK!\n\nSNSや新歓ブースでも\n入会受付中",
     en: "Feel free to visit us first.\nYou can also contact us through social media or at our welcome booth.",
+   
+     links: [
+    {
+      text: "サークルのHPは\nここをタップ!",
+      url: "https://tnp-homepage.vercel.app/"
+    },
+    {
+      text: "Xはここをタップ!",
+      url: "https://x.com/tnp_akita"
+    }
+  ],
+   
     icon: `
       <svg viewBox="0 0 64 64" aria-hidden="true">
         <path d="M18 46 46 18"></path>
@@ -166,6 +181,27 @@ const openModal = (key) => {
   modalJp.textContent = data.jp;
   modalEn.textContent = data.en;
   modalIcon.innerHTML = data.icon;
+
+    if (data.mapLink) {
+    modalEn.innerHTML += `
+      <br><br>
+      <a href="${data.mapLink}" target="_blank" class="map-link">
+        GoogleMapで\n場所を見る
+      </a>
+    `;
+  }
+
+  if (data.links) {
+  const linksHtml = data.links
+    .map(
+      (link) =>
+        `<a href="${link.url}" target="_blank" class="map-link">${link.text}</a>`
+    )
+    .join("<br>");
+
+  modalJp.innerHTML += "<br><br>" + linksHtml;
+}
+
 
   modalLayer.classList.add("is-open");
   infoModal.dataset.active = "true";

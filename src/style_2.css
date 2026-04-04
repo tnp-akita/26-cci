@@ -956,3 +956,42 @@ canvas {
     scroll-behavior: auto !important;
   }
 }
+
+
+.map-link,
+.hp-link,
+.x-link {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 10px 14px;
+
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 700;
+
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+
+/* Google Map */
+.map-link {
+  background-color: #34A853;
+}
+
+/* Website */
+.hp-link {
+  background-color: #1a73e8;
+}
+
+/* X */
+.x-link {
+  background-color: #000000;
+}
+
+/* 押したときの動き */
+.map-link:hover,
+.hp-link:hover,
+.x-link:hover {
+  transform: translateY(-1px);
+  opacity: 0.9;
+}
